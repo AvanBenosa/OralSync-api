@@ -1,10 +1,11 @@
 ﻿using DMD.APPLICATION.PatientsModule.Patient.Models;
+using DMD.APPLICATION.PatientsModule.PatientProfile.Model;
 using DMD.APPLICATION.Responses;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using System.Net;
-using Queries = DMD.APPLICATION.PatientsModule.Patient.Queries;
 using Commands = DMD.APPLICATION.PatientsModule.Patient.Commands;
+using Queries = DMD.APPLICATION.PatientsModule.Patient.Queries;
 
 
 namespace DMD.API.Controllers.Patient
