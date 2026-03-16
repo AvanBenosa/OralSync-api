@@ -34,6 +34,7 @@ namespace DMD.DOMAIN.Entities.Patients
         public List<PatientUploads> Uploads { get; set; }
 
         public List<PatientForm> Forms { get; set; }    
+        public List<PatientOverview> Overviews { get; set; }
 
     }
 }

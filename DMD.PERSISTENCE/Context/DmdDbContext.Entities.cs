@@ -12,6 +12,8 @@ namespace DMD.PERSISTENCE.Context
 
         public DbSet<PatientInfo> PatientInfos { get;set;  }
 
+        public DbSet<PatientOverview> PatientOverviews { get;set; }
+
         public DbSet<PatientMedicalHistory> PatientMedicalHistories { get;set;  }
 
         public DbSet<PatientEmergencyContact> PatientEmergencyContacts { get; set; }    
