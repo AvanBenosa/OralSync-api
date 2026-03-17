@@ -1,6 +1,7 @@
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -133,6 +134,8 @@ namespace DMD.API.Configurations
         {
             try
             {
+                await EnsureHangfireDatabaseAsync(services);
+
                 var context = services.GetRequiredService<DmdDbContext>();
 
                 await context.Database.MigrateAsync();
@@ -141,6 +144,52 @@ namespace DMD.API.Configurations
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
                 logger.LogError(ex, "An error occurred during migration.");
+            }
+        }
+
+        internal static async Task EnsureHangfireDatabaseAsync(IServiceProvider services)
+        {
+            try
+            {
+                var configuration = services.GetRequiredService<IConfiguration>();
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                var hangfireConnectionString = configuration.GetConnectionString("Hangfire");
+
+                if (string.IsNullOrWhiteSpace(hangfireConnectionString))
+                {
+                    logger.LogInformation("Hangfire connection string is not configured. Skipping Hangfire database bootstrap.");
+                    return;
+                }
+
+                var hangfireBuilder = new SqlConnectionStringBuilder(hangfireConnectionString);
+                var hangfireDatabaseName = hangfireBuilder.InitialCatalog;
+
+                if (string.IsNullOrWhiteSpace(hangfireDatabaseName))
+                {
+                    logger.LogWarning("Hangfire Initial Catalog is missing. Skipping Hangfire database bootstrap.");
+                    return;
+                }
+
+                var masterBuilder = new SqlConnectionStringBuilder(hangfireConnectionString)
+                {
+                    InitialCatalog = "master"
+                };
+
+                await using var connection = new SqlConnection(masterBuilder.ConnectionString);
+                await connection.OpenAsync();
+
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    $"IF DB_ID(@databaseName) IS NULL BEGIN CREATE DATABASE [{hangfireDatabaseName}] END";
+                command.Parameters.AddWithValue("@databaseName", hangfireDatabaseName);
+
+                await command.ExecuteNonQueryAsync();
+                logger.LogInformation("Ensured Hangfire database {DatabaseName} exists.", hangfireDatabaseName);
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred while ensuring the Hangfire database exists.");
             }
         }
     }

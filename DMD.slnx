@@ -3,5 +3,6 @@
   <Project Path="DMD.DOMAIN/DMD.DOMAIN.csproj" />
   <Project Path="DMD.PERSISTENCE/DMD.PERSISTENCE.csproj" />
   <Project Path="DMD.SERVICES/DMD.SERVICES.csproj" />
+  <Project Path="DMD.HANGFIRE/DMD.HANGFIRE.csproj" />
   <Project Path="DMD/DMD.API.csproj" />
 </Solution>

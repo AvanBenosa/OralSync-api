@@ -18,7 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DMD.DOMAIN\DMD.DOMAIN.csproj" />
+    <ProjectReference Include="..\DMD.HANGFIRE\DMD.HANGFIRE.csproj" />
     <ProjectReference Include="..\DMD.PERSISTENCE\DMD.PERSISTENCE.csproj" />
+    <ProjectReference Include="..\DMD.SERVICES\DMD.SERVICES.csproj" />
   </ItemGroup>
 
   <ItemGroup>

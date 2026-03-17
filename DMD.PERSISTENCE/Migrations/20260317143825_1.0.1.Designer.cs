@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    [Migration("20260316080442_1.0.2")]
-    partial class _102
+    [Migration("20260317143825_1.0.1")]
+    partial class _101
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,49 +25,6 @@ namespace DMD.PERSISTENCE.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DMD.DOMAIN.Entities.Appointment.AppointmentRemarks", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AppointmentRequestId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastUpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LastUpdatedById")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Remarks")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppointmentRequestId");
-
-                    b.ToTable("AppointmentRemarks");
-                });
-
             modelBuilder.Entity("DMD.DOMAIN.Entities.Appointment.AppointmentRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -76,7 +33,10 @@ namespace DMD.PERSISTENCE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("AppointmentDate")
+                    b.Property<DateTime>("AppointmentDateFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("AppointmentDateTo")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
@@ -87,13 +47,6 @@ namespace DMD.PERSISTENCE.Migrations
 
                     b.Property<string>("CreatedById")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Dentist")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DoctorId")
-                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -107,14 +60,18 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("LastUpdatedById")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PatientName")
+                    b.Property<string>("PatientInfoId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("PatientInfoId1")
+                        .HasColumnType("int");
+
                     b.Property<string>("ReasonForVisit")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Remarks")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -122,6 +79,8 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PatientInfoId1");
 
                     b.ToTable("AppointmentRequests");
                 });
@@ -339,6 +298,9 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("CreatedById")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -361,7 +323,10 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<bool>("Q1")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("Q10")
+                    b.Property<bool>("Q10Nursing")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("Q10Pregnant")
                         .HasColumnType("bit");
 
                     b.Property<bool>("Q11")
@@ -406,6 +371,138 @@ namespace DMD.PERSISTENCE.Migrations
                     b.HasIndex("PatientInfoId");
 
                     b.ToTable("PatientMedicalHistories");
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientOverview", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("Balance")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastUpdatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("PaidAmount")
+                        .HasColumnType("float");
+
+                    b.Property<int>("PatientInfoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Procedure")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("TotalAmount")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientInfoId");
+
+                    b.ToTable("PatientOverviews");
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientProgressNote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Account")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("float");
+
+                    b.Property<double>("AmountPaid")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Balance")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("Discount")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastUpdatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PatientInfoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Procedure")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("TotalAmountDue")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientInfoId");
+
+                    b.ToTable("PatientProgressNotes");
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientTeeth", b =>
@@ -819,13 +916,11 @@ namespace DMD.PERSISTENCE.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("DMD.DOMAIN.Entities.Appointment.AppointmentRemarks", b =>
+            modelBuilder.Entity("DMD.DOMAIN.Entities.Appointment.AppointmentRequest", b =>
                 {
-                    b.HasOne("DMD.DOMAIN.Entities.Appointment.AppointmentRequest", null)
-                        .WithMany("Remarks")
-                        .HasForeignKey("AppointmentRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
+                        .WithMany("AppointmentRequests")
+                        .HasForeignKey("PatientInfoId1");
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientEmergencyContact", b =>
@@ -850,6 +945,24 @@ namespace DMD.PERSISTENCE.Migrations
                 {
                     b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
                         .WithMany("MedicalHistories")
+                        .HasForeignKey("PatientInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientOverview", b =>
+                {
+                    b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
+                        .WithMany("Overviews")
+                        .HasForeignKey("PatientInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientProgressNote", b =>
+                {
+                    b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
+                        .WithMany("ProgressNotes")
                         .HasForeignKey("PatientInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -924,18 +1037,19 @@ namespace DMD.PERSISTENCE.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DMD.DOMAIN.Entities.Appointment.AppointmentRequest", b =>
-                {
-                    b.Navigation("Remarks");
-                });
-
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientInfo", b =>
                 {
+                    b.Navigation("AppointmentRequests");
+
                     b.Navigation("EmergencyContacts");
 
                     b.Navigation("Forms");
 
                     b.Navigation("MedicalHistories");
+
+                    b.Navigation("Overviews");
+
+                    b.Navigation("ProgressNotes");
 
                     b.Navigation("Uploads");
                 });

@@ -7,6 +7,7 @@ using static DMD.API.Configurations.Services;
 using static DMD.API.Configurations.Identity;
 using static DMD.API.Configurations.Authentication;
 using DMD.API.Configurations;
+using Hangfire;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,16 @@ RegisterAutoMapper(builder);
 AddFluentValidation(builder);
 RegisterIdentity(builder);
 RegisterServices(builder);
+builder.Services.AddHangfire((serviceProvider, configuration) =>
+{
+    configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(
+            builder.Configuration.GetConnectionString("Hangfire")
+            ?? builder.Configuration.GetConnectionString("Default"));
+});
 
 
 // API 

@@ -12,32 +12,6 @@ namespace DMD.PERSISTENCE.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "AppointmentRequests",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PatientName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PatientId = table.Column<int>(type: "int", nullable: false),
-                    AppointmentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReasonForVisit = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DoctorId = table.Column<int>(type: "int", nullable: false),
-                    Dentist = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AppointmentRequests", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
                 {
@@ -110,6 +84,7 @@ namespace DMD.PERSISTENCE.Migrations
                     Religion = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BloodType = table.Column<int>(type: "int", nullable: false),
                     CivilStatus = table.Column<int>(type: "int", nullable: false),
+                    ProfilePicture = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Tag = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -145,33 +120,6 @@ namespace DMD.PERSISTENCE.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PatientTeeth", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AppointmentRemarks",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    AppointmentRequestId = table.Column<int>(type: "int", nullable: false),
-                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AppointmentRemarks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AppointmentRemarks_AppointmentRequests_AppointmentRequestId",
-                        column: x => x.AppointmentRequestId,
-                        principalTable: "AppointmentRequests",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -281,6 +229,37 @@ namespace DMD.PERSISTENCE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AppointmentRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PatientInfoId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AppointmentDateFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AppointmentDateTo = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReasonForVisit = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PatientInfoId1 = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppointmentRequests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AppointmentRequests_PatientInfos_PatientInfoId1",
+                        column: x => x.PatientInfoId1,
+                        principalTable: "PatientInfos",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PatientEmergencyContacts",
                 columns: table => new
                 {
@@ -347,6 +326,7 @@ namespace DMD.PERSISTENCE.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     PatientInfoId = table.Column<int>(type: "int", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Q1 = table.Column<bool>(type: "bit", nullable: false),
                     Q2 = table.Column<bool>(type: "bit", nullable: false),
                     Q3 = table.Column<bool>(type: "bit", nullable: false),
@@ -356,7 +336,8 @@ namespace DMD.PERSISTENCE.Migrations
                     Q7 = table.Column<bool>(type: "bit", nullable: false),
                     Q8 = table.Column<bool>(type: "bit", nullable: false),
                     Q9 = table.Column<bool>(type: "bit", nullable: false),
-                    Q10 = table.Column<bool>(type: "bit", nullable: false),
+                    Q10Nursing = table.Column<bool>(type: "bit", nullable: false),
+                    Q10Pregnant = table.Column<bool>(type: "bit", nullable: false),
                     Q11 = table.Column<bool>(type: "bit", nullable: false),
                     Q12 = table.Column<bool>(type: "bit", nullable: false),
                     Q13 = table.Column<bool>(type: "bit", nullable: false),
@@ -375,6 +356,74 @@ namespace DMD.PERSISTENCE.Migrations
                     table.PrimaryKey("PK_PatientMedicalHistories", x => x.Id);
                     table.ForeignKey(
                         name: "FK_PatientMedicalHistories_PatientInfos_PatientInfoId",
+                        column: x => x.PatientInfoId,
+                        principalTable: "PatientInfos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PatientOverviews",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PatientInfoId = table.Column<int>(type: "int", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Procedure = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Balance = table.Column<double>(type: "float", nullable: false),
+                    PaidAmount = table.Column<double>(type: "float", nullable: false),
+                    TotalAmount = table.Column<double>(type: "float", nullable: false),
+                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PatientOverviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PatientOverviews_PatientInfos_PatientInfoId",
+                        column: x => x.PatientInfoId,
+                        principalTable: "PatientInfos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PatientProgressNotes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PatientInfoId = table.Column<int>(type: "int", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Procedure = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Balance = table.Column<double>(type: "float", nullable: false),
+                    Account = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Amount = table.Column<double>(type: "float", nullable: false),
+                    Discount = table.Column<double>(type: "float", nullable: false),
+                    TotalAmountDue = table.Column<double>(type: "float", nullable: false),
+                    AmountPaid = table.Column<double>(type: "float", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PatientProgressNotes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PatientProgressNotes_PatientInfos_PatientInfoId",
                         column: x => x.PatientInfoId,
                         principalTable: "PatientInfos",
                         principalColumn: "Id",
@@ -443,9 +492,9 @@ namespace DMD.PERSISTENCE.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AppointmentRemarks_AppointmentRequestId",
-                table: "AppointmentRemarks",
-                column: "AppointmentRequestId");
+                name: "IX_AppointmentRequests_PatientInfoId1",
+                table: "AppointmentRequests",
+                column: "PatientInfoId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -502,6 +551,16 @@ namespace DMD.PERSISTENCE.Migrations
                 column: "PatientInfoId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PatientOverviews_PatientInfoId",
+                table: "PatientOverviews",
+                column: "PatientInfoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PatientProgressNotes_PatientInfoId",
+                table: "PatientProgressNotes",
+                column: "PatientInfoId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PatientTeethSurface_PatientTeethId",
                 table: "PatientTeethSurface",
                 column: "PatientTeethId",
@@ -517,7 +576,7 @@ namespace DMD.PERSISTENCE.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AppointmentRemarks");
+                name: "AppointmentRequests");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
@@ -544,13 +603,16 @@ namespace DMD.PERSISTENCE.Migrations
                 name: "PatientMedicalHistories");
 
             migrationBuilder.DropTable(
+                name: "PatientOverviews");
+
+            migrationBuilder.DropTable(
+                name: "PatientProgressNotes");
+
+            migrationBuilder.DropTable(
                 name: "PatientTeethSurface");
 
             migrationBuilder.DropTable(
                 name: "PatientUploads");
-
-            migrationBuilder.DropTable(
-                name: "AppointmentRequests");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
