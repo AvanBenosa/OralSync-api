@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Text;
 
 namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
 {
@@ -55,43 +56,28 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 }
 
                 var extension = Path.GetExtension(request.FileName).ToLowerInvariant();
-                if (extension != ".xlsx")
+                if (extension != ".xlsx" && extension != ".csv")
                 {
-                    return new BadRequestResponse("Invalid file type. Only .xlsx files are allowed.");
+                    return new BadRequestResponse("Invalid file type. Only .xlsx and .csv files are allowed.");
                 }
 
-                using var stream = new MemoryStream(request.FileContent);
-                using var workbook = new XLWorkbook(stream);
-                var worksheet = workbook.Worksheets.FirstOrDefault(x => x.Name.Equals("Patients", StringComparison.OrdinalIgnoreCase))
-                    ?? workbook.Worksheets.FirstOrDefault();
+                var uploadRowsResult = extension == ".csv"
+                    ? BuildUploadRowsFromCsv(request.FileContent)
+                    : BuildUploadRowsFromExcel(request.FileContent);
 
-                if (worksheet == null)
+                if (!uploadRowsResult.Success)
                 {
-                    return new BadRequestResponse("The uploaded workbook does not contain any worksheets.");
+                    return new BadRequestResponse(uploadRowsResult.ErrorMessage);
                 }
 
-                var firstUsedRow = worksheet.FirstRowUsed();
-                if (firstUsedRow == null)
+                var uploadRows = uploadRowsResult.Rows;
+                var result = new PatientUploadResultModel
                 {
-                    return new BadRequestResponse("The uploaded worksheet is empty.");
-                }
+                    TotalRows = uploadRows.Count
+                };
 
-                var headerMap = BuildHeaderMap(firstUsedRow);
-                if (!headerMap.ContainsKey("FirstName") || !headerMap.ContainsKey("LastName"))
-                {
-                    return new BadRequestResponse("The worksheet must contain FirstName and LastName columns.");
-                }
-
-                var result = new PatientUploadResultModel();
                 var today = DateTime.Today;
                 var sequence = await dbContext.PatientInfos.CountAsync(x => x.CreatedAt.Date == today, cancellationToken);
-                var uploadRows = worksheet.RowsUsed()
-                    .Skip(1)
-                    .Select(row => BuildUploadRow(row, headerMap))
-                    .Where(row => !IsEmptyRow(row))
-                    .ToList();
-
-                result.TotalRows = uploadRows.Count;
 
                 var existingPatients = await dbContext.PatientInfos
                     .AsNoTracking()
@@ -206,6 +192,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
 
                     validRows.Add(new ValidatedUploadRow
                     {
+                        RowNumber = row.RowNumber,
                         FirstName = firstName,
                         LastName = lastName,
                         MiddleName = middleName,
@@ -219,7 +206,6 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                         BloodType = bloodType,
                         CivilStatus = civilStatus,
                         ProfilePicture = NormalizeValue(row.ProfilePicture),
-                        RowNumber = row.RowNumber,
                     });
                 });
 
@@ -269,6 +255,80 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             }
         }
 
+        private static UploadRowsBuildResult BuildUploadRowsFromExcel(byte[] fileContent)
+        {
+            using var stream = new MemoryStream(fileContent);
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.FirstOrDefault(x => x.Name.Equals("Patients", StringComparison.OrdinalIgnoreCase))
+                ?? workbook.Worksheets.FirstOrDefault();
+
+            if (worksheet == null)
+            {
+                return UploadRowsBuildResult.Fail("The uploaded workbook does not contain any worksheets.");
+            }
+
+            var firstUsedRow = worksheet.FirstRowUsed();
+            if (firstUsedRow == null)
+            {
+                return UploadRowsBuildResult.Fail("The uploaded worksheet is empty.");
+            }
+
+            var headerMap = BuildHeaderMap(firstUsedRow);
+            if (!headerMap.ContainsKey("FirstName") || !headerMap.ContainsKey("LastName"))
+            {
+                return UploadRowsBuildResult.Fail("The worksheet must contain FirstName and LastName columns.");
+            }
+
+            var rows = worksheet.RowsUsed()
+                .Skip(1)
+                .Select(row => BuildUploadRow(row, headerMap))
+                .Where(row => !IsEmptyRow(row))
+                .ToList();
+
+            return UploadRowsBuildResult.Ok(rows);
+        }
+
+        private static UploadRowsBuildResult BuildUploadRowsFromCsv(byte[] fileContent)
+        {
+            var csvText = Encoding.UTF8.GetString(fileContent);
+            if (string.IsNullOrWhiteSpace(csvText))
+            {
+                return UploadRowsBuildResult.Fail("The uploaded csv file is empty.");
+            }
+
+            var rawLines = csvText
+                .Replace("\r\n", "\n")
+                .Replace('\r', '\n')
+                .Split('\n')
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            if (rawLines.Count == 0)
+            {
+                return UploadRowsBuildResult.Fail("The uploaded csv file is empty.");
+            }
+
+            var headerValues = ParseCsvLine(rawLines[0]);
+            var headerMap = BuildHeaderMap(headerValues);
+            if (!headerMap.ContainsKey("FirstName") || !headerMap.ContainsKey("LastName"))
+            {
+                return UploadRowsBuildResult.Fail("The csv file must contain FirstName and LastName columns.");
+            }
+
+            var rows = new List<UploadRow>();
+            for (var index = 1; index < rawLines.Count; index++)
+            {
+                var values = ParseCsvLine(rawLines[index]);
+                var row = BuildUploadRow(values, headerMap, index + 1);
+                if (!IsEmptyRow(row))
+                {
+                    rows.Add(row);
+                }
+            }
+
+            return UploadRowsBuildResult.Ok(rows);
+        }
+
         private static Dictionary<string, int> BuildHeaderMap(IXLRow headerRow)
         {
             var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -276,9 +336,27 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             foreach (var cell in headerRow.CellsUsed())
             {
                 var headerName = cell.GetString().Trim();
-                if (!string.IsNullOrWhiteSpace(headerName) && SupportedHeaders.Contains(headerName, StringComparer.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(headerName) &&
+                    SupportedHeaders.Contains(headerName, StringComparer.OrdinalIgnoreCase))
                 {
                     map[headerName] = cell.Address.ColumnNumber;
+                }
+            }
+
+            return map;
+        }
+
+        private static Dictionary<string, int> BuildHeaderMap(List<string> headerValues)
+        {
+            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (var index = 0; index < headerValues.Count; index++)
+            {
+                var headerName = headerValues[index].Trim();
+                if (!string.IsNullOrWhiteSpace(headerName) &&
+                    SupportedHeaders.Contains(headerName, StringComparer.OrdinalIgnoreCase))
+                {
+                    map[headerName] = index;
                 }
             }
 
@@ -302,6 +380,28 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 Religion = GetCellString(row, headerMap, "Religion"),
                 BloodType = GetCellString(row, headerMap, "BloodType"),
                 CivilStatus = GetCellString(row, headerMap, "CivilStatus"),
+                ProfilePicture = GetCellString(row, headerMap, "ProfilePicture"),
+            };
+        }
+
+        private static UploadRow BuildUploadRow(List<string> rowValues, Dictionary<string, int> headerMap, int rowNumber)
+        {
+            return new UploadRow
+            {
+                RowNumber = rowNumber,
+                FirstName = GetCellString(rowValues, headerMap, "FirstName"),
+                LastName = GetCellString(rowValues, headerMap, "LastName"),
+                MiddleName = GetCellString(rowValues, headerMap, "MiddleName"),
+                EmailAddress = GetCellString(rowValues, headerMap, "EmailAddress"),
+                BirthDate = GetCellString(rowValues, headerMap, "BirthDate"),
+                ContactNumber = GetCellString(rowValues, headerMap, "ContactNumber"),
+                Address = GetCellString(rowValues, headerMap, "Address"),
+                Suffix = GetCellString(rowValues, headerMap, "Suffix"),
+                Occupation = GetCellString(rowValues, headerMap, "Occupation"),
+                Religion = GetCellString(rowValues, headerMap, "Religion"),
+                BloodType = GetCellString(rowValues, headerMap, "BloodType"),
+                CivilStatus = GetCellString(rowValues, headerMap, "CivilStatus"),
+                ProfilePicture = GetCellString(rowValues, headerMap, "ProfilePicture"),
             };
         }
 
@@ -313,6 +413,16 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             }
 
             return row.Cell(columnNumber).GetString().Trim();
+        }
+
+        private static string GetCellString(List<string> rowValues, Dictionary<string, int> headerMap, string headerName)
+        {
+            if (!headerMap.TryGetValue(headerName, out var columnIndex) || columnIndex >= rowValues.Count)
+            {
+                return string.Empty;
+            }
+
+            return rowValues[columnIndex].Trim();
         }
 
         private static bool IsEmptyRow(UploadRow row)
@@ -332,10 +442,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 && string.IsNullOrWhiteSpace(row.ProfilePicture);
         }
 
-        private static bool TryParseBirthDate(
-            string rawValue,
-            out DateTime? birthDate,
-            out string errorMessage)
+        private static bool TryParseBirthDate(string rawValue, out DateTime? birthDate, out string errorMessage)
         {
             birthDate = null;
             errorMessage = string.Empty;
@@ -425,6 +532,64 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             {
                 return false;
             }
+        }
+
+        private static List<string> ParseCsvLine(string line)
+        {
+            var values = new List<string>();
+            var current = new StringBuilder();
+            var inQuotes = false;
+
+            for (var index = 0; index < line.Length; index++)
+            {
+                var character = line[index];
+
+                if (character == '"')
+                {
+                    if (inQuotes && index + 1 < line.Length && line[index + 1] == '"')
+                    {
+                        current.Append('"');
+                        index++;
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
+                    }
+
+                    continue;
+                }
+
+                if (character == ',' && !inQuotes)
+                {
+                    values.Add(current.ToString());
+                    current.Clear();
+                    continue;
+                }
+
+                current.Append(character);
+            }
+
+            values.Add(current.ToString());
+            return values;
+        }
+
+        private class UploadRowsBuildResult
+        {
+            public bool Success { get; init; }
+            public string ErrorMessage { get; init; } = string.Empty;
+            public List<UploadRow> Rows { get; init; } = new();
+
+            public static UploadRowsBuildResult Ok(List<UploadRow> rows) => new()
+            {
+                Success = true,
+                Rows = rows,
+            };
+
+            public static UploadRowsBuildResult Fail(string errorMessage) => new()
+            {
+                Success = false,
+                ErrorMessage = errorMessage,
+            };
         }
 
         private class UploadRow
