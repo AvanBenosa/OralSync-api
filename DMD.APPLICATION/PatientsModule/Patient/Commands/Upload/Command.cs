@@ -7,6 +7,8 @@ using DMD.PERSISTENCE.Context;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
+using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
 {
@@ -33,6 +35,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             "Religion",
             "BloodType",
             "CivilStatus",
+            "ProfilePicture",
         ];
 
         private readonly DmdDbContext dbContext;
@@ -80,76 +83,170 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 }
 
                 var result = new PatientUploadResultModel();
-                var patientsToCreate = new List<PatientInfo>();
                 var today = DateTime.Today;
                 var sequence = await dbContext.PatientInfos.CountAsync(x => x.CreatedAt.Date == today, cancellationToken);
+                var uploadRows = worksheet.RowsUsed()
+                    .Skip(1)
+                    .Select(row => BuildUploadRow(row, headerMap))
+                    .Where(row => !IsEmptyRow(row))
+                    .ToList();
 
-                foreach (var row in worksheet.RowsUsed().Skip(1))
-                {
-                    if (IsEmptyRow(row, headerMap))
+                result.TotalRows = uploadRows.Count;
+
+                var existingPatients = await dbContext.PatientInfos
+                    .AsNoTracking()
+                    .Select(x => new
                     {
-                        continue;
-                    }
+                        x.FirstName,
+                        x.LastName,
+                        x.MiddleName,
+                        x.BirthDate,
+                        x.EmailAddress,
+                        x.ContactNumber,
+                    })
+                    .ToListAsync(cancellationToken);
 
-                    result.TotalRows++;
+                var existingIdentityKeys = existingPatients
+                    .Select(x => BuildIdentityKey(x.FirstName, x.LastName, x.MiddleName, x.BirthDate))
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    var firstName = GetCellString(row, headerMap, "FirstName");
-                    var lastName = GetCellString(row, headerMap, "LastName");
+                var existingEmailKeys = existingPatients
+                    .Select(x => NormalizeValue(x.EmailAddress))
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var existingContactKeys = existingPatients
+                    .Select(x => NormalizeContact(x.ContactNumber))
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var validRows = new ConcurrentBag<ValidatedUploadRow>();
+                var errors = new ConcurrentBag<string>();
+                var skippedCount = 0;
+                var fileIdentityKeys = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+                var fileEmailKeys = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+                var fileContactKeys = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+
+                Parallel.ForEach(uploadRows, row =>
+                {
+                    var firstName = NormalizeValue(row.FirstName);
+                    var lastName = NormalizeValue(row.LastName);
+                    var middleName = NormalizeValue(row.MiddleName);
 
                     if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
                     {
-                        result.SkippedCount++;
-                        result.Errors.Add($"Row {row.RowNumber()}: FirstName and LastName are required.");
-                        continue;
+                        errors.Add($"Row {row.RowNumber}: FirstName and LastName are required.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
                     }
 
-                    if (!TryParseBirthDate(row, headerMap, out var birthDate, out var birthDateError))
+                    if (!TryParseBirthDate(row.BirthDate, out var birthDate, out var birthDateError))
                     {
-                        result.SkippedCount++;
-                        result.Errors.Add($"Row {row.RowNumber()}: {birthDateError}");
-                        continue;
+                        errors.Add($"Row {row.RowNumber}: {birthDateError}");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
                     }
 
-                    if (!TryParseEnum(GetCellString(row, headerMap, "Suffix"), Suffix.None, out Suffix suffix))
+                    if (!TryParseEnum(row.Suffix, Suffix.None, out Suffix suffix))
                     {
-                        result.SkippedCount++;
-                        result.Errors.Add($"Row {row.RowNumber()}: Invalid Suffix value.");
-                        continue;
+                        errors.Add($"Row {row.RowNumber}: Invalid Suffix value.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
                     }
 
-                    if (!TryParseEnum(GetCellString(row, headerMap, "CivilStatus"), CivilStatus.None, out CivilStatus civilStatus))
+                    if (!TryParseEnum(row.CivilStatus, CivilStatus.None, out CivilStatus civilStatus))
                     {
-                        result.SkippedCount++;
-                        result.Errors.Add($"Row {row.RowNumber()}: Invalid CivilStatus value.");
-                        continue;
+                        errors.Add($"Row {row.RowNumber}: Invalid CivilStatus value.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
                     }
 
-                    if (!TryParseEnum(GetCellString(row, headerMap, "BloodType"), BloodTypes.A_Positive, out BloodTypes bloodType))
+                    if (!TryParseEnum(row.BloodType, BloodTypes.A_Positive, out BloodTypes bloodType))
                     {
-                        result.SkippedCount++;
-                        result.Errors.Add($"Row {row.RowNumber()}: Invalid BloodType value.");
-                        continue;
+                        errors.Add($"Row {row.RowNumber}: Invalid BloodType value.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
                     }
 
-                    sequence++;
-                    patientsToCreate.Add(new PatientInfo
+                    if (!IsValidEmail(row.EmailAddress))
                     {
-                        PatientNumber = $"DMD-{today:yyyyMMdd}-{sequence:D4}",
+                        errors.Add($"Row {row.RowNumber}: Invalid EmailAddress value.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
+                    }
+
+                    var identityKey = BuildIdentityKey(firstName, lastName, middleName, birthDate);
+                    var emailKey = NormalizeValue(row.EmailAddress);
+                    var contactKey = NormalizeContact(row.ContactNumber);
+
+                    if (!string.IsNullOrWhiteSpace(identityKey) &&
+                        (existingIdentityKeys.Contains(identityKey) || !fileIdentityKeys.TryAdd(identityKey, 0)))
+                    {
+                        errors.Add($"Row {row.RowNumber}: Patient already exists based on name and birth date.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(emailKey) &&
+                        (existingEmailKeys.Contains(emailKey) || !fileEmailKeys.TryAdd(emailKey, 0)))
+                    {
+                        errors.Add($"Row {row.RowNumber}: Patient already exists based on email address.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(contactKey) &&
+                        (existingContactKeys.Contains(contactKey) || !fileContactKeys.TryAdd(contactKey, 0)))
+                    {
+                        errors.Add($"Row {row.RowNumber}: Patient already exists based on contact number.");
+                        Interlocked.Increment(ref skippedCount);
+                        return;
+                    }
+
+                    validRows.Add(new ValidatedUploadRow
+                    {
                         FirstName = firstName,
                         LastName = lastName,
-                        MiddleName = GetCellString(row, headerMap, "MiddleName"),
-                        EmailAddress = GetCellString(row, headerMap, "EmailAddress"),
+                        MiddleName = middleName,
+                        EmailAddress = NormalizeValue(row.EmailAddress),
                         BirthDate = birthDate,
-                        ContactNumber = GetCellString(row, headerMap, "ContactNumber"),
-                        Address = GetCellString(row, headerMap, "Address"),
+                        ContactNumber = NormalizeValue(row.ContactNumber),
+                        Address = NormalizeValue(row.Address),
                         Suffix = suffix,
-                        Occupation = GetCellString(row, headerMap, "Occupation"),
-                        Religion = GetCellString(row, headerMap, "Religion"),
+                        Occupation = NormalizeValue(row.Occupation),
+                        Religion = NormalizeValue(row.Religion),
                         BloodType = bloodType,
                         CivilStatus = civilStatus,
-                        ProfilePicture = string.Empty
+                        ProfilePicture = NormalizeValue(row.ProfilePicture),
+                        RowNumber = row.RowNumber,
                     });
-                }
+                });
+
+                var patientsToCreate = validRows
+                    .OrderBy(x => x.RowNumber)
+                    .Select(row =>
+                    {
+                        sequence++;
+                        return new PatientInfo
+                        {
+                            PatientNumber = $"DMD-{today:yyyyMMdd}-{sequence:D4}",
+                            FirstName = row.FirstName,
+                            LastName = row.LastName,
+                            MiddleName = row.MiddleName,
+                            EmailAddress = row.EmailAddress,
+                            BirthDate = row.BirthDate,
+                            ContactNumber = row.ContactNumber,
+                            Address = row.Address,
+                            Suffix = row.Suffix,
+                            Occupation = row.Occupation,
+                            Religion = row.Religion,
+                            BloodType = row.BloodType,
+                            CivilStatus = row.CivilStatus,
+                            ProfilePicture = row.ProfilePicture,
+                        };
+                    })
+                    .ToList();
 
                 if (patientsToCreate.Count > 0)
                 {
@@ -158,6 +255,8 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 }
 
                 result.ImportedCount = patientsToCreate.Count;
+                result.SkippedCount = skippedCount;
+                result.Errors = errors.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
                 return new SuccessResponse<PatientUploadResultModel>(result);
             }
             catch (Exception error)
@@ -186,9 +285,24 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             return map;
         }
 
-        private static bool IsEmptyRow(IXLRow row, Dictionary<string, int> headerMap)
+        private static UploadRow BuildUploadRow(IXLRow row, Dictionary<string, int> headerMap)
         {
-            return headerMap.Values.All(columnNumber => string.IsNullOrWhiteSpace(row.Cell(columnNumber).GetString()));
+            return new UploadRow
+            {
+                RowNumber = row.RowNumber(),
+                FirstName = GetCellString(row, headerMap, "FirstName"),
+                LastName = GetCellString(row, headerMap, "LastName"),
+                MiddleName = GetCellString(row, headerMap, "MiddleName"),
+                EmailAddress = GetCellString(row, headerMap, "EmailAddress"),
+                BirthDate = GetCellString(row, headerMap, "BirthDate"),
+                ContactNumber = GetCellString(row, headerMap, "ContactNumber"),
+                Address = GetCellString(row, headerMap, "Address"),
+                Suffix = GetCellString(row, headerMap, "Suffix"),
+                Occupation = GetCellString(row, headerMap, "Occupation"),
+                Religion = GetCellString(row, headerMap, "Religion"),
+                BloodType = GetCellString(row, headerMap, "BloodType"),
+                CivilStatus = GetCellString(row, headerMap, "CivilStatus"),
+            };
         }
 
         private static string GetCellString(IXLRow row, Dictionary<string, int> headerMap, string headerName)
@@ -201,37 +315,52 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             return row.Cell(columnNumber).GetString().Trim();
         }
 
+        private static bool IsEmptyRow(UploadRow row)
+        {
+            return string.IsNullOrWhiteSpace(row.FirstName)
+                && string.IsNullOrWhiteSpace(row.LastName)
+                && string.IsNullOrWhiteSpace(row.MiddleName)
+                && string.IsNullOrWhiteSpace(row.EmailAddress)
+                && string.IsNullOrWhiteSpace(row.BirthDate)
+                && string.IsNullOrWhiteSpace(row.ContactNumber)
+                && string.IsNullOrWhiteSpace(row.Address)
+                && string.IsNullOrWhiteSpace(row.Suffix)
+                && string.IsNullOrWhiteSpace(row.Occupation)
+                && string.IsNullOrWhiteSpace(row.Religion)
+                && string.IsNullOrWhiteSpace(row.BloodType)
+                && string.IsNullOrWhiteSpace(row.CivilStatus)
+                && string.IsNullOrWhiteSpace(row.ProfilePicture);
+        }
+
         private static bool TryParseBirthDate(
-            IXLRow row,
-            Dictionary<string, int> headerMap,
+            string rawValue,
             out DateTime? birthDate,
             out string errorMessage)
         {
             birthDate = null;
             errorMessage = string.Empty;
 
-            if (!headerMap.TryGetValue("BirthDate", out var columnNumber))
+            if (string.IsNullOrWhiteSpace(rawValue))
             {
                 return true;
             }
 
-            var cell = row.Cell(columnNumber);
-            if (cell.IsEmpty())
-            {
-                return true;
-            }
-
-            if (cell.TryGetValue<DateTime>(out var dateValue))
-            {
-                birthDate = dateValue.Date;
-                return true;
-            }
-
-            var textValue = cell.GetString().Trim();
-            if (DateTime.TryParse(textValue, out var parsedDate))
+            if (DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsedDate))
             {
                 birthDate = parsedDate.Date;
                 return true;
+            }
+
+            if (double.TryParse(rawValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var oaDate))
+            {
+                try
+                {
+                    birthDate = DateTime.FromOADate(oaDate).Date;
+                    return true;
+                }
+                catch
+                {
+                }
             }
 
             errorMessage = "BirthDate must be a valid Excel date or YYYY-MM-DD string.";
@@ -248,6 +377,90 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             }
 
             return Enum.TryParse(rawValue, true, out parsedValue);
+        }
+
+        private static string NormalizeValue(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string NormalizeContact(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return new string(value.Where(char.IsDigit).ToArray());
+        }
+
+        private static string BuildIdentityKey(string? firstName, string? lastName, string? middleName, DateTime? birthDate)
+        {
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            {
+                return string.Empty;
+            }
+
+            return string.Join("|",
+                NormalizeValue(firstName).ToUpperInvariant(),
+                NormalizeValue(lastName).ToUpperInvariant(),
+                NormalizeValue(middleName).ToUpperInvariant(),
+                birthDate?.Date.ToString("yyyy-MM-dd") ?? string.Empty);
+        }
+
+        private static bool IsValidEmail(string? emailAddress)
+        {
+            var value = NormalizeValue(emailAddress);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return true;
+            }
+
+            try
+            {
+                _ = new System.Net.Mail.MailAddress(value);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private class UploadRow
+        {
+            public int RowNumber { get; set; }
+            public string FirstName { get; set; } = string.Empty;
+            public string LastName { get; set; } = string.Empty;
+            public string MiddleName { get; set; } = string.Empty;
+            public string EmailAddress { get; set; } = string.Empty;
+            public string BirthDate { get; set; } = string.Empty;
+            public string ContactNumber { get; set; } = string.Empty;
+            public string Address { get; set; } = string.Empty;
+            public string Suffix { get; set; } = string.Empty;
+            public string Occupation { get; set; } = string.Empty;
+            public string Religion { get; set; } = string.Empty;
+            public string BloodType { get; set; } = string.Empty;
+            public string CivilStatus { get; set; } = string.Empty;
+            public string ProfilePicture { get; set; } = string.Empty;
+        }
+
+        private class ValidatedUploadRow
+        {
+            public int RowNumber { get; set; }
+            public string FirstName { get; set; } = string.Empty;
+            public string LastName { get; set; } = string.Empty;
+            public string MiddleName { get; set; } = string.Empty;
+            public string EmailAddress { get; set; } = string.Empty;
+            public DateTime? BirthDate { get; set; }
+            public string ContactNumber { get; set; } = string.Empty;
+            public string Address { get; set; } = string.Empty;
+            public Suffix Suffix { get; set; }
+            public string Occupation { get; set; } = string.Empty;
+            public string Religion { get; set; } = string.Empty;
+            public BloodTypes BloodType { get; set; }
+            public CivilStatus CivilStatus { get; set; }
+            public string ProfilePicture { get; set; } = string.Empty;
         }
     }
 }
