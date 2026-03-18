@@ -45,18 +45,31 @@ namespace DMD.API.Configurations
                     OnTokenValidated = async context =>
                     {
                         var token = context.Request.Headers["Authorization"].ToString()?.Replace("Bearer ", string.Empty);
-                        var accountsUrl = builder.Configuration["TokenKey"]
-                                        ?? throw new Exception("Token is missing in appsettings.json");
+                        var validationBaseUrl = builder.Configuration["Auth:ValidationBaseUrl"]
+                            ?? builder.Configuration["Accounts:BaseUrl"];
+
+                        if (string.IsNullOrWhiteSpace(token))
+                        {
+                            context.Fail("Missing bearer token.");
+                            return;
+                        }
+
+                        // Local JWT validation is already configured above. Only call an external
+                        // validation endpoint when an absolute base URL is explicitly configured.
+                        if (string.IsNullOrWhiteSpace(validationBaseUrl)
+                            || !Uri.TryCreate(validationBaseUrl, UriKind.Absolute, out var baseUri))
+                        {
+                            return;
+                        }
 
                         using var httpClient = new HttpClient();
                         httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                        var postResponse = await httpClient.PostAsync($"{accountsUrl}/api/auth/validate", null);
+                        var validationUri = new Uri(baseUri, "/api/auth/validate");
+                        var postResponse = await httpClient.PostAsync(validationUri, null);
 
                         if (!postResponse.IsSuccessStatusCode)
                         {
                             context.Fail("Token validation failed");
-                            // Setting Response.StatusCode here doesn't work directly; OnChallenge will handle it.
                         }
                     },
                     OnChallenge = context =>

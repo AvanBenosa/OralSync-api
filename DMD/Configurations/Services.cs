@@ -7,6 +7,7 @@ namespace DMD.API.Configurations
     {
         internal static void RegisterServices(WebApplicationBuilder builder)
         {
+            builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<TokenService>();
             builder.Services.AddDmdEmailServices(builder.Configuration);
         }

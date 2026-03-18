@@ -4,11 +4,7 @@ using DMD.DOMAIN.Entities.UserProfile;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using NJsonSchema.Annotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using LoginAuthResponse = DMD.APPLICATION.Auth.Models.AuthResponse;
 
 namespace DMD.APPLICATION.Auth.Commands
@@ -17,6 +13,7 @@ namespace DMD.APPLICATION.Auth.Commands
     public class Command : IRequest<Response>
     {
         public string Email { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; } = false;
     }
@@ -41,7 +38,22 @@ namespace DMD.APPLICATION.Auth.Commands
         {
             try
             {
-                var user = await userManager.FindByEmailAsync(request.Email);
+                var identifier = request.Email?.Trim();
+                var alternateIdentifier = request.Username?.Trim();
+
+                UserProfile? user = null;
+                if (!string.IsNullOrWhiteSpace(identifier))
+                {
+                    user = await userManager.FindByEmailAsync(identifier);
+                    user ??= await userManager.FindByNameAsync(identifier);
+                }
+
+                if (user == null && !string.IsNullOrWhiteSpace(alternateIdentifier))
+                {
+                    user = await userManager.FindByEmailAsync(alternateIdentifier);
+                    user ??= await userManager.FindByNameAsync(alternateIdentifier);
+                }
+
                 if (user == null)
                 {
                     return new BadRequestResponse("Invalid email or password");
@@ -58,22 +70,7 @@ namespace DMD.APPLICATION.Auth.Commands
                     return new BadRequestResponse("Account is inactive");
                 }
 
-                var token = GenerateJwtToken(user);
-                var authResponse = new LoginAuthResponse
-                {
-                    Token = token,
-                    User = new UserDto
-                    {
-                        Id = user.Id,
-                        FirstName = user.FirstName ?? string.Empty,
-                        LastName = user.LastName ?? string.Empty,
-                        Name = user.FullName,
-                        Email = user.Email ?? user.EmailAddress ?? string.Empty,
-                        Role = user.Role.ToString().ToLowerInvariant(),
-                        RoleLabel = user.RoleLabel,
-                        ContactNumber = user.ContactNumber
-                    }
-                };
+                var authResponse = AuthResponseFactory.Create(user, configuration);
 
                 return new SuccessResponse<LoginAuthResponse>(authResponse);
             }
@@ -81,63 +78,6 @@ namespace DMD.APPLICATION.Auth.Commands
             {
                 return new BadRequestResponse(error.GetBaseException().Message);
             }
-        }
-
-        private string GenerateJwtToken(UserProfile user)
-        {
-            var keyValue = configuration["Jwt:Key"] ?? configuration["JwtSettings:SecretKey"];
-            if (string.IsNullOrWhiteSpace(keyValue))
-            {
-                throw new InvalidOperationException("JWT key is missing. Configure Jwt:Key.");
-            }
-
-            var issuer = configuration["Jwt:Issuer"] ?? configuration["JwtSettings:Issuer"];
-            var audience = configuration["Jwt:Audience"] ?? configuration["JwtSettings:Audience"];
-            if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(audience))
-            {
-                throw new InvalidOperationException("JWT issuer/audience is missing.");
-            }
-
-            var expiryInMinutesText = configuration["Jwt:ExpiryInMinutes"];
-            var expirationInDaysText = configuration["JwtSettings:ExpirationInDays"];
-            var expiresAt = DateTime.UtcNow.AddMinutes(60);
-
-            if (int.TryParse(expiryInMinutesText, out var expiryInMinutes) && expiryInMinutes > 0)
-            {
-                expiresAt = DateTime.UtcNow.AddMinutes(expiryInMinutes);
-            }
-            else if (double.TryParse(expirationInDaysText, out var expirationInDays) && expirationInDays > 0)
-            {
-                expiresAt = DateTime.UtcNow.AddDays(expirationInDays);
-            }
-
-            var key = Encoding.ASCII.GetBytes(keyValue);
-            var email = user.Email ?? user.EmailAddress ?? string.Empty;
-
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.NameIdentifier, user.Id),
-                new(ClaimTypes.Name, user.FullName),
-                new(ClaimTypes.Email, email),
-                new(ClaimTypes.Role, user.Role.ToString()),
-                new("firstName", user.FirstName ?? string.Empty),
-                new("lastName", user.LastName ?? string.Empty)
-            };
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = expiresAt,
-                Issuer = issuer,
-                Audience = audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
         }
     }
 }

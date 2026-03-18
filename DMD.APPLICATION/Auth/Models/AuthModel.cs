@@ -4,15 +4,30 @@
     public class LoginRequest
     {
         public string Email { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; } = false;
     }
 
     public class RegisterRequest
     {
+        public string UserName { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string MiddleName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public DateTime? BirthDate { get; set; }
+        public string Address { get; set; } = string.Empty;
+        public string Religion { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public DateTime? StartDate { get; set; }
+        public string EmploymentType { get; set; } = string.Empty;
+        public string Preffix { get; set; } = string.Empty;
+        public string Suffix { get; set; } = string.Empty;
+        public string ClinicName { get; set; } = string.Empty;
+        public string ClinicAddress { get; set; } = string.Empty;
+        public string ClinicEmailAddress { get; set; } = string.Empty;
+        public string ClinicContactNumber { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string ConfirmPassword { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
@@ -23,6 +38,12 @@
     {
         public string Token { get; set; } = string.Empty;
         public UserDto User { get; set; } = new();
+        public bool RequiresRegistration { get; set; }
+    }
+
+    public class RegistrationStatusResponse
+    {
+        public bool RequiresRegistration { get; set; }
     }
 
     public class ChangePasswordRequest
@@ -44,6 +65,7 @@
     public class UserDto
     {
         public string Id { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

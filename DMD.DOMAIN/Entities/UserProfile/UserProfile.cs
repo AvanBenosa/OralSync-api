@@ -1,4 +1,4 @@
-﻿using DMD.DOMAIN.Enums;
+using DMD.DOMAIN.Enums;
 using Microsoft.AspNetCore.Identity;
 
 namespace DMD.DOMAIN.Entities.UserProfile
@@ -28,5 +28,6 @@ namespace DMD.DOMAIN.Entities.UserProfile
         public EmploymentType EmploymentType { get; set; }
         public string Bio { get; set; }
         public bool IsActive { get; set; }
+        public int? ClinicId { get; set; }
     }
 }
