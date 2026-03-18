@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
 
 namespace DMD.PERSISTENCE.Context
@@ -24,6 +25,16 @@ namespace DMD.PERSISTENCE.Context
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<ClinicProfile>()
+                .Property(item => item.WorkingDays)
+                .HasConversion(
+                    new ValueConverter<List<string>, string>(
+                        value => string.Join('|', value ?? new List<string>()),
+                        value => string.IsNullOrWhiteSpace(value)
+                            ? new List<string>()
+                            : value.Split('|', StringSplitOptions.None).ToList()))
+                .HasColumnType("nvarchar(max)");
 
             builder.Entity<ClinicProfile>()
                 .HasQueryFilter(item =>

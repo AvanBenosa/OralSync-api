@@ -31,6 +31,36 @@ namespace DMD.API.Controllers.Clinic
             return Created("", data);
         }
 
+        [HttpGet("get-current-clinic-profile")]
+        [Description("Get current clinic profile")]
+        [ProducesResponseType(typeof(ClinicProfileModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCurrentClinicProfile([FromQuery] ClinicQueries.GetCurrent.Query query)
+        {
+            var result = await Mediator.Send(query);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<ClinicProfileModel>)result).Data;
+            return Ok(data);
+        }
+
+        [HttpPut("put-clinic-profile")]
+        [Description("Update clinic profile")]
+        [ProducesResponseType(typeof(ClinicProfileModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateClinicProfile([FromBody] ClinicCommands.Update.Command command)
+        {
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<ClinicProfileModel>)result).Data;
+            return Ok(data);
+        }
+
         [HttpGet("data-privacy-status")]
         [Description("Get current clinic data privacy acceptance status")]
         [ProducesResponseType(typeof(ClinicModels.DataPrivacyStatusModel), (int)HttpStatusCode.OK)]
