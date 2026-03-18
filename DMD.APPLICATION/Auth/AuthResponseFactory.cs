@@ -26,7 +26,10 @@ namespace DMD.APPLICATION.Auth
                 || string.Equals(user.UserName, seedEmail, StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static AuthResponse Create(UserProfile user, IConfiguration configuration)
+        internal static AuthResponse Create(
+            UserProfile user,
+            IConfiguration configuration,
+            string? clinicName = null)
         {
             return new AuthResponse
             {
@@ -40,6 +43,8 @@ namespace DMD.APPLICATION.Auth
                     LastName = user.LastName ?? string.Empty,
                     Name = user.FullName,
                     Email = user.Email ?? user.EmailAddress ?? string.Empty,
+                    ClinicId = user.ClinicId,
+                    ClinicName = clinicName?.Trim() ?? string.Empty,
                     Role = user.Role.ToString().ToLowerInvariant(),
                     RoleLabel = user.RoleLabel,
                     ContactNumber = user.ContactNumber,

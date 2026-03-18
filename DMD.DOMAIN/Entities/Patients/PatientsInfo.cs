@@ -10,6 +10,7 @@ namespace DMD.DOMAIN.Entities.Patients
 {
     public class PatientInfo : BaseEntity<int>
     {
+        public int ClinicProfileId { get; set; }
         public string PatientNumber { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }

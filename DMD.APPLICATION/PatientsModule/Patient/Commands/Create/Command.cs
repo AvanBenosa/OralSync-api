@@ -13,7 +13,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
     [JsonSchema("CreateCommand")]
     public class Command : IRequest<Response>
     {
-
+        public int ClinicProfileId { get; set; }
         public string PatientNumber { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -53,6 +53,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
                 var patientNumber = $"DMD-{today:yyyyMMdd}-{sequence:D4}";
                 var newItem = new PatientInfo
                 {
+                    ClinicProfileId = request.ClinicProfileId,
                     PatientNumber = patientNumber,
                     FirstName =request.FirstName,
                     LastName = request.LastName,

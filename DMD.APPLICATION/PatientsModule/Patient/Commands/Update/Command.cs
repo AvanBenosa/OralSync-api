@@ -12,6 +12,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Update
     [JsonSchema("UpdateCommand")]
     public class Command : IRequest<Response>
     {
+        public int ClinicProfileId { get; set; }
         public int Id { get; set;  }
         public string FirstName { get; set; }
         public string LastName { get; set; }

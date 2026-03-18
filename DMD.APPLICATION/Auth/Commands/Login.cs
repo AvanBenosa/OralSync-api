@@ -1,8 +1,10 @@
 using DMD.APPLICATION.Auth.Models;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.UserProfile;
+using DMD.PERSISTENCE.Context;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NJsonSchema.Annotations;
 using LoginAuthResponse = DMD.APPLICATION.Auth.Models.AuthResponse;
@@ -23,15 +25,18 @@ namespace DMD.APPLICATION.Auth.Commands
         private readonly UserManager<UserProfile> userManager;
         private readonly SignInManager<UserProfile> signInManager;
         private readonly IConfiguration configuration;
+        private readonly DmdDbContext dbContext;
 
         public CommandHandler(
             UserManager<UserProfile> userManager,
             SignInManager<UserProfile> signInManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            DmdDbContext dbContext)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
+            this.dbContext = dbContext;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -70,7 +75,16 @@ namespace DMD.APPLICATION.Auth.Commands
                     return new BadRequestResponse("Account is inactive");
                 }
 
-                var authResponse = AuthResponseFactory.Create(user, configuration);
+                string? clinicName = null;
+                if (user.ClinicId.HasValue)
+                {
+                    clinicName = await dbContext.ClinicProfiles
+                        .Where(item => item.Id == user.ClinicId.Value)
+                        .Select(item => item.ClinicName)
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
+
+                var authResponse = AuthResponseFactory.Create(user, configuration, clinicName);
 
                 return new SuccessResponse<LoginAuthResponse>(authResponse);
             }
