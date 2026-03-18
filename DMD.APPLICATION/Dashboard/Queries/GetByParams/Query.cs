@@ -1,7 +1,9 @@
 using DMD.APPLICATION.Dashboard.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Enums.Appointment;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
@@ -17,10 +19,12 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
     public class QueryHandler : IRequestHandler<Query, Response>
     {
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
-        public QueryHandler(DmdDbContext dbContext)
+        public QueryHandler(DmdDbContext dbContext, IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
@@ -76,15 +80,14 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                     })
                     .ToListAsync(cancellationToken);
 
-                var latestPatients = latestPatientItems
-                    .Select(x => new DashboardPatientItemModel
+                var latestPatients = (await Task.WhenAll(latestPatientItems
+                    .Select(async x => new DashboardPatientItemModel
                     {
-                        Id = x.Id,
+                        Id = await protectionProvider.EncryptIntIdAsync(x.Id, ProtectedIdPurpose.Patient),
                         PatientNumber = x.PatientNumber,
                         FullName = BuildFullName(x.FirstName, x.MiddleName, x.LastName),
                         LatestActivity = string.IsNullOrWhiteSpace(x.LatestActivity) ? "Patient record created" : x.LatestActivity
-                    })
-                    .ToList();
+                    }))).ToList();
 
                 var todayAppointments = await BuildAppointmentList(today, tomorrow, cancellationToken);
                 var nextDayAppointments = await BuildAppointmentList(tomorrow, nextDay, cancellationToken);

@@ -2,6 +2,7 @@ using DMD.APPLICATION.Auth.Models;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -26,17 +27,20 @@ namespace DMD.APPLICATION.Auth.Commands
         private readonly SignInManager<UserProfile> signInManager;
         private readonly IConfiguration configuration;
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             UserManager<UserProfile> userManager,
             SignInManager<UserProfile> signInManager,
             IConfiguration configuration,
-            DmdDbContext dbContext)
+            DmdDbContext dbContext,
+            IProtectionProvider protectionProvider)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -96,6 +100,7 @@ namespace DMD.APPLICATION.Auth.Commands
                 var authResponse = AuthResponseFactory.Create(
                     user,
                     configuration,
+                    protectionProvider,
                     clinicName,
                     isDataPrivacyAccepted,
                     isLocked);

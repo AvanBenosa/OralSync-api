@@ -1,7 +1,9 @@
 using DMD.APPLICATION.Appointment.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Enums.Appointment;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
@@ -11,7 +13,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
     [JsonSchema("AppointmentUpdateCommand")]
     public class Command : IRequest<Response>
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string PatientInfoId { get; set; } = string.Empty;
         public DateTime AppointmentDateFrom { get; set; }
         public DateTime AppointmentDateTo { get; set; }
@@ -23,10 +25,12 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
     public class CommandHandler : IRequestHandler<Command, Response>
     {
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
-        public CommandHandler(DmdDbContext dbContext)
+        public CommandHandler(DmdDbContext dbContext, IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -36,15 +40,17 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                 if (request.AppointmentDateFrom >= request.AppointmentDateTo)
                     return new BadRequestResponse("Appointment end time must be later than the start time.");
 
+                var appointmentId = await protectionProvider.DecryptIntIdAsync(request.Id, ProtectedIdPurpose.Appointment);
                 var item = await dbContext.AppointmentRequests
-                    .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+                    .FirstOrDefaultAsync(x => x.Id == appointmentId, cancellationToken);
 
                 if (item == null)
                     return new BadRequestResponse("Item may have been modified or removed.");
 
+                var patientId = await protectionProvider.DecryptIntIdAsync(request.PatientInfoId, ProtectedIdPurpose.Patient);
                 var patient = await dbContext.PatientInfos
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id.ToString() == request.PatientInfoId, cancellationToken);
+                    .FirstOrDefaultAsync(x => x.Id == patientId, cancellationToken);
 
                 if (patient == null)
                     return new BadRequestResponse("Selected patient does not exist.");
@@ -56,7 +62,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                     .AsNoTracking()
                     .AnyAsync(
                         x =>
-                            x.Id != request.Id &&
+                            x.Id != appointmentId &&
                             x.Status != AppointmentStatus.Cancelled &&
                             x.AppointmentDateFrom < request.AppointmentDateTo &&
                             x.AppointmentDateTo > request.AppointmentDateFrom,
@@ -65,7 +71,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                 if (hasConflict)
                     return new BadRequestResponse("Appointment schedule conflicts with an existing appointment.");
 
-                item.PatientInfoId = request.PatientInfoId.Trim();
+                item.PatientInfoId = patientId.ToString();
                 item.AppointmentDateFrom = request.AppointmentDateFrom;
                 item.AppointmentDateTo = request.AppointmentDateTo;
                 item.ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty;
@@ -80,8 +86,8 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
 
                 var response = new AppointmentModel
                 {
-                    Id = item.Id,
-                    PatientInfoId = item.PatientInfoId,
+                    Id = await protectionProvider.EncryptIntIdAsync(item.Id, ProtectedIdPurpose.Appointment),
+                    PatientInfoId = await protectionProvider.EncryptIntIdAsync(patientId, ProtectedIdPurpose.Patient),
                     AppointmentDateFrom = item.AppointmentDateFrom,
                     AppointmentDateTo = item.AppointmentDateTo,
                     ReasonForVisit = item.ReasonForVisit,

@@ -1,12 +1,10 @@
-﻿
-
 namespace DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Model
 {
     public class PatientMedicalHistoryModel
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public DateTime? Date { get; set; }
-        public int PatientsInfoId { get; set; }
+        public string PatientsInfoId { get; set; } = string.Empty;
         public bool Q1 { get; set; }
         public bool Q2 { get; set; }
         public bool Q3 { get; set; }
@@ -20,7 +18,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Model
         public bool Q10Pregnant { get; set; }
         public bool Q12 { get; set; }
         public bool Q13 { get; set; }
-        public string Others { get; set; }
-        public string Remarks { get; set; }
+        public string Others { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
     }
 }

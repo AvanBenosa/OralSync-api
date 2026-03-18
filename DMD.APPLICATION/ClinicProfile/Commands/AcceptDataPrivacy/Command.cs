@@ -1,6 +1,8 @@
 using DMD.APPLICATION.ClinicProfiles.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +18,16 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.AcceptDataPrivacy
     {
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -49,7 +54,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.AcceptDataPrivacy
 
                 return new SuccessResponse<DataPrivacyStatusModel>(new DataPrivacyStatusModel
                 {
-                    ClinicId = clinic.Id,
+                    ClinicId = await protectionProvider.EncryptIntIdAsync(clinic.Id, ProtectedIdPurpose.Clinic),
                     ClinicName = clinic.ClinicName,
                     IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
                     IsLocked = clinic.IsLocked

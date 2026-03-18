@@ -1,8 +1,10 @@
 using DMD.APPLICATION.Responses;
 using DMD.APPLICATION.UserProfileModule.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -41,15 +43,18 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Update
         private readonly UserManager<UserProfile> userManager;
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             UserManager<UserProfile> userManager,
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.userManager = userManager;
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -67,9 +72,18 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Update
                     return new BadRequestResponse("User profile was not found.");
                 }
 
+                var decryptedUserId = await protectionProvider.DecryptStringIdAsync(
+                    request.Id,
+                    ProtectedIdPurpose.User);
+
+                if (string.IsNullOrWhiteSpace(decryptedUserId))
+                {
+                    return new BadRequestResponse("User profile was not found.");
+                }
+
                 var user = await dbContext.UserProfiles
                     .FirstOrDefaultAsync(
-                        x => x.Id == request.Id && x.ClinicId == clinicId,
+                        x => x.Id == decryptedUserId && x.ClinicId == clinicId,
                         cancellationToken);
 
                 if (user == null)
@@ -151,7 +165,7 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Update
 
                 return new SuccessResponse<UserProfileModel>(new UserProfileModel
                 {
-                    Id = user.Id,
+                    Id = await protectionProvider.EncryptStringIdAsync(user.Id, ProtectedIdPurpose.User) ?? string.Empty,
                     UserName = user.UserName ?? string.Empty,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
@@ -168,7 +182,7 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Update
                     Bio = user.Bio,
                     Role = (int)user.Role,
                     RoleLabel = user.RoleLabel,
-                    ClinicId = user.ClinicId,
+                    ClinicId = await protectionProvider.EncryptNullableIntIdAsync(user.ClinicId, ProtectedIdPurpose.Clinic),
                     IsActive = user.IsActive
                 });
             }

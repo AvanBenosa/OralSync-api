@@ -3,6 +3,7 @@ using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -43,15 +44,18 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
         private readonly UserManager<UserProfile> userManager;
         private readonly IConfiguration configuration;
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             UserManager<UserProfile> userManager,
             IConfiguration configuration,
-            DmdDbContext dbContext)
+            DmdDbContext dbContext,
+            IProtectionProvider protectionProvider)
         {
             this.userManager = userManager;
             this.configuration = configuration;
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -160,6 +164,7 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
                 var response = AuthResponseFactory.Create(
                     user,
                     configuration,
+                    protectionProvider,
                     clinic.ClinicName,
                     clinic.IsDataPrivacyAccepted);
                 response.RequiresRegistration = false;

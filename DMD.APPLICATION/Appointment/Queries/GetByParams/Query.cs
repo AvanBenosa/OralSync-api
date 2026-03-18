@@ -1,6 +1,8 @@
 using DMD.APPLICATION.Appointment.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
@@ -19,16 +21,27 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
     public class QueryHandler : IRequestHandler<Query, Response>
     {
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
-        public QueryHandler(DmdDbContext dbContext)
+        public QueryHandler(DmdDbContext dbContext, IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
         {
             try
             {
+                var clinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                    request.ClinicId,
+                    ProtectedIdPurpose.Clinic);
+
+                if (!clinicId.HasValue)
+                {
+                    return new BadRequestResponse("Authenticated clinic was not found.");
+                }
+
                 var appointments = await dbContext.AppointmentRequests
                     .AsNoTracking()
                     .OrderByDescending(x => x.AppointmentDateFrom)
@@ -38,11 +51,12 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                     .Select(x => x.PatientInfoId)
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .Distinct()
+                    .Select(int.Parse)
                     .ToList();
 
                 var patients = await dbContext.PatientInfos
                     .AsNoTracking()
-                    .Where(x => patientIds.Contains(x.Id.ToString()))
+                    .Where(x => x.ClinicProfileId == clinicId.Value && patientIds.Contains(x.Id))
                     .Select(x => new
                     {
                         x.Id,
@@ -74,30 +88,32 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                         };
                     });
 
-                var items = appointments.Select(x =>
-                {
-                    patientLookup.TryGetValue(x.PatientInfoId ?? string.Empty, out var patient);
-
-                    return new AppointmentModel
+                var items = await Task.WhenAll(appointments
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PatientInfoId) && patientLookup.ContainsKey(x.PatientInfoId))
+                    .Select(async x =>
                     {
-                        Id = x.Id,
-                        PatientInfoId = x.PatientInfoId ?? string.Empty,
-                        AppointmentDateFrom = x.AppointmentDateFrom,
-                        AppointmentDateTo = x.AppointmentDateTo,
-                        ReasonForVisit = x.ReasonForVisit ?? string.Empty,
-                        Status = x.Status.ToString(),
-                        Remarks = x.Remarks ?? string.Empty,
-                        PatientName = patient?.PatientName ?? string.Empty,
-                        PatientNumber = patient?.PatientNumber ?? string.Empty
-                    };
-                }).ToList();
+                        patientLookup.TryGetValue(x.PatientInfoId ?? string.Empty, out var patient);
+
+                        return new AppointmentModel
+                        {
+                            Id = await protectionProvider.EncryptIntIdAsync(x.Id, ProtectedIdPurpose.Appointment),
+                            PatientInfoId = await protectionProvider.EncryptIntIdAsync(int.Parse(x.PatientInfoId ?? "0"), ProtectedIdPurpose.Patient),
+                            AppointmentDateFrom = x.AppointmentDateFrom,
+                            AppointmentDateTo = x.AppointmentDateTo,
+                            ReasonForVisit = x.ReasonForVisit ?? string.Empty,
+                            Status = x.Status.ToString(),
+                            Remarks = x.Remarks ?? string.Empty,
+                            PatientName = patient?.PatientName ?? string.Empty,
+                            PatientNumber = patient?.PatientNumber ?? string.Empty
+                        };
+                    }));
 
                 var response = new AppointmentResponseModel
                 {
-                    Items = items,
+                    Items = items.ToList(),
                     PageStart = request.PageStart,
                     PageEnd = request.PageEnd,
-                    TotalCount = items.Count
+                    TotalCount = items.Length
                 };
 
                 return new SuccessResponse<AppointmentResponseModel>(response);

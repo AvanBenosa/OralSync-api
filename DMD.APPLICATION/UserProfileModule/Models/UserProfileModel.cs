@@ -19,7 +19,7 @@ namespace DMD.APPLICATION.UserProfileModule.Models
         public string Bio { get; set; } = string.Empty;
         public int Role { get; set; }
         public string RoleLabel { get; set; } = string.Empty;
-        public int? ClinicId { get; set; }
+        public string? ClinicId { get; set; }
         public bool IsActive { get; set; }
     }
 }

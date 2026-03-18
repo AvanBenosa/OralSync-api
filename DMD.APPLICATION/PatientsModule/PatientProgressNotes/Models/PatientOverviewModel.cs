@@ -1,22 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Models
 {
     public class PatientProgressNoteModel
     {
-        public int Id { get; set; }
-        public int PatientInfoId { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string PatientInfoId { get; set; } = string.Empty;
         public DateTime? Date { get; set; }
-        public string Procedure { get; set; }
-        public string Category { get; set; }
-        public string Remarks { get; set; }
-
+        public string Procedure { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
         public double Balance { get; set; }
-        public string Account { get; set; }
+        public string Account { get; set; } = string.Empty;
         public double Amount { get; set; }
         public double Discount { get; set; }
         public double TotalAmountDue { get; set; }

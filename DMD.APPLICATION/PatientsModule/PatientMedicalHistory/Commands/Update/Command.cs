@@ -1,7 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Model;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
@@ -11,8 +13,8 @@ namespace DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Commands.Update
     [JsonSchema("UpdateCommand")]
     public class Command : IRequest<Response>
     {
-        public int Id { get; set; }
-        public int PatientInfoId { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string PatientInfoId { get; set; } = string.Empty;
         public DateTime? Date { get; set; }
         public bool Q1 { get; set; }
         public bool Q2 { get; set; }
@@ -28,24 +30,32 @@ namespace DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Commands.Update
         public bool Q11 { get; set; }
         public bool Q12 { get; set; }
         public bool Q13 { get; set; }
-        public string Others { get; set; }
-        public string Remarks { get; set; }
+        public string Others { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
     }
+
     public class CommandHandler : IRequestHandler<Command, Response>
     {
         private readonly DmdDbContext dbContext;
         private readonly IMapper mapper;
+        private readonly IProtectionProvider protectionProvider;
 
-        public CommandHandler(DmdDbContext dbContext, IMapper mapper)
+        public CommandHandler(DmdDbContext dbContext, IMapper mapper, IProtectionProvider protectionProvider)
         {
             this.mapper = mapper;
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
+
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
         {
             try
             {
-                var item = await dbContext.PatientMedicalHistories.FirstOrDefaultAsync(x => x.Id == request.Id && x.PatientInfoId == request.PatientInfoId);
+                var itemId = await protectionProvider.DecryptIntIdAsync(request.Id, ProtectedIdPurpose.Patient);
+                var patientInfoId = await protectionProvider.DecryptIntIdAsync(request.PatientInfoId, ProtectedIdPurpose.Patient);
+                var item = await dbContext.PatientMedicalHistories.FirstOrDefaultAsync(
+                    x => x.Id == itemId && x.PatientInfoId == patientInfoId,
+                    cancellationToken);
 
                 if (item == null)
                     return new BadRequestResponse("Item may have been modified or removed.");
@@ -68,13 +78,12 @@ namespace DMD.APPLICATION.PatientsModule.PatientMedicalHistory.Commands.Update
                 item.Others = request.Others;
                 item.Remarks = request.Remarks;
 
-                await dbContext.SaveChangesAsync();
-                await dbContext.DisposeAsync();
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 var response = mapper.Map<PatientMedicalHistoryModel>(item);
-
+                response.Id = await protectionProvider.EncryptIntIdAsync(item.Id, ProtectedIdPurpose.Patient);
+                response.PatientsInfoId = await protectionProvider.EncryptIntIdAsync(item.PatientInfoId, ProtectedIdPurpose.Patient);
                 return new SuccessResponse<PatientMedicalHistoryModel>(response);
-
             }
             catch (Exception error)
             {

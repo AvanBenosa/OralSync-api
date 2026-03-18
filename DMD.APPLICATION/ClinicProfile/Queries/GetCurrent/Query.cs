@@ -1,6 +1,8 @@
 using DMD.APPLICATION.ClinicProfiles.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -10,27 +12,32 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetCurrent
 {
     public class Query : IRequest<Response>
     {
-        public int? ClinicId { get; set; }
+        public string? ClinicId { get; set; }
     }
 
     public class QueryHandler : IRequestHandler<Query, Response>
     {
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public QueryHandler(
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
         {
             try
             {
-                var clinicId = request.ClinicId;
+                var clinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                    request.ClinicId,
+                    ProtectedIdPurpose.Clinic);
 
                 if (!clinicId.HasValue)
                 {
@@ -43,30 +50,31 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetCurrent
                     return new BadRequestResponse("Authenticated clinic was not found.");
                 }
 
-                var item = await dbContext.ClinicProfiles
+                var clinic = await dbContext.ClinicProfiles
                     .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(x => x.Id == clinicId.Value)
-                    .Select(x => new ClinicProfileModel
-                    {
-                        Id = x.Id,
-                        ClinicName = x.ClinicName,
-                        Address = x.Address,
-                        EmailAddress = x.EmailAddress,
-                        ContactNumber = x.ContactNumber,
-                        IsDataPrivacyAccepted = x.IsDataPrivacyAccepted,
-                        OpeningTime = x.OpeningTime,
-                        ClosingTime = x.ClosingTime,
-                        LunchStartTime = x.LunchStartTime,
-                        LunchEndTime = x.LunchEndTime,
-                        WorkingDays = x.WorkingDays
-                    })
                     .FirstOrDefaultAsync(cancellationToken);
 
-                if (item == null)
+                if (clinic == null)
                 {
                     return new BadRequestResponse("Clinic profile was not found.");
                 }
+
+                var item = new ClinicProfileModel
+                    {
+                        Id = await protectionProvider.EncryptIntIdAsync(clinic.Id, ProtectedIdPurpose.Clinic),
+                        ClinicName = clinic.ClinicName,
+                        Address = clinic.Address,
+                        EmailAddress = clinic.EmailAddress,
+                        ContactNumber = clinic.ContactNumber,
+                        IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
+                        OpeningTime = clinic.OpeningTime,
+                        ClosingTime = clinic.ClosingTime,
+                        LunchStartTime = clinic.LunchStartTime,
+                        LunchEndTime = clinic.LunchEndTime,
+                        WorkingDays = clinic.WorkingDays
+                    };
 
                 return new SuccessResponse<ClinicProfileModel>(item);
             }

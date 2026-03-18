@@ -1,6 +1,8 @@
 using DMD.APPLICATION.Responses;
 using DMD.APPLICATION.UserProfileModule.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -10,27 +12,32 @@ namespace DMD.APPLICATION.UserProfileModule.Queries.GetByParams
 {
     public class Query : IRequest<Response>
     {
-        public int? ClinicId { get; set; }
+        public string? ClinicId { get; set; }
     }
 
     public class QueryHandler : IRequestHandler<Query, Response>
     {
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public QueryHandler(
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
         {
             try
             {
-                var clinicId = request.ClinicId;
+                var clinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                    request.ClinicId,
+                    ProtectedIdPurpose.Clinic);
 
                 if (!clinicId.HasValue)
                 {
@@ -43,13 +50,15 @@ namespace DMD.APPLICATION.UserProfileModule.Queries.GetByParams
                     return new BadRequestResponse("Authenticated clinic was not found.");
                 }
 
-                var items = await dbContext.UserProfiles
+                var users = await dbContext.UserProfiles
                     .AsNoTracking()
                     .Where(x => x.ClinicId == clinicId.Value)
                     .OrderByDescending(x => x.Id)
-                    .Select(x => new UserProfileModel
+                    .ToListAsync(cancellationToken);
+
+                var items = users.Select(x => new UserProfileModel
                     {
-                        Id = x.Id,
+                        Id = protectionProvider.EncryptStringIdAsync(x.Id, ProtectedIdPurpose.User).GetAwaiter().GetResult() ?? string.Empty,
                         UserName = x.UserName ?? string.Empty,
                         FirstName = x.FirstName,
                         LastName = x.LastName,
@@ -66,10 +75,10 @@ namespace DMD.APPLICATION.UserProfileModule.Queries.GetByParams
                         Bio = x.Bio,
                         Role = (int)x.Role,
                         RoleLabel = x.RoleLabel,
-                        ClinicId = x.ClinicId,
+                        ClinicId = protectionProvider.EncryptNullableIntIdAsync(x.ClinicId, ProtectedIdPurpose.Clinic).GetAwaiter().GetResult(),
                         IsActive = x.IsActive
                     })
-                    .ToListAsync(cancellationToken);
+                    .ToList();
 
                 return new SuccessResponse<UserProfileResponseModel>(new UserProfileResponseModel
                 {

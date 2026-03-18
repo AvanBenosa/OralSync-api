@@ -1,7 +1,9 @@
 using DMD.APPLICATION.ClinicProfiles.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -25,15 +27,18 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Create
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly UserManager<UserProfile> userManager;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             DmdDbContext dbContext,
             IHttpContextAccessor httpContextAccessor,
-            UserManager<UserProfile> userManager)
+            UserManager<UserProfile> userManager,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
             this.userManager = userManager;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -82,7 +87,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Create
 
                 return new SuccessResponse<ClinicProfileModel>(new ClinicProfileModel
                 {
-                    Id = item.Id,
+                    Id = await protectionProvider.EncryptIntIdAsync(item.Id, ProtectedIdPurpose.Clinic),
                     ClinicName = item.ClinicName,
                     Address = item.Address,
                     EmailAddress = item.EmailAddress,

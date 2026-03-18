@@ -1,8 +1,10 @@
 using DMD.APPLICATION.Appointment.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.Appointment;
 using DMD.DOMAIN.Enums.Appointment;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
@@ -23,10 +25,12 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
     public class CommandHandler : IRequestHandler<Command, Response>
     {
         private readonly DmdDbContext dbContext;
+        private readonly IProtectionProvider protectionProvider;
 
-        public CommandHandler(DmdDbContext dbContext)
+        public CommandHandler(DmdDbContext dbContext, IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -39,9 +43,11 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
                 if (request.AppointmentDateFrom >= request.AppointmentDateTo)
                     return new BadRequestResponse("Appointment end time must be later than the start time.");
 
+                var patientId = await protectionProvider.DecryptIntIdAsync(request.PatientInfoId, ProtectedIdPurpose.Patient);
+
                 var patient = await dbContext.PatientInfos
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id.ToString() == request.PatientInfoId, cancellationToken);
+                    .FirstOrDefaultAsync(x => x.Id == patientId, cancellationToken);
 
                 if (patient == null)
                     return new BadRequestResponse("Selected patient does not exist.");
@@ -63,7 +69,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
 
                 var newItem = new AppointmentRequest
                 {
-                    PatientInfoId = request.PatientInfoId.Trim(),
+                    PatientInfoId = patientId.ToString(),
                     AppointmentDateFrom = request.AppointmentDateFrom,
                     AppointmentDateTo = request.AppointmentDateTo,
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,
@@ -80,8 +86,8 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
 
                 var response = new AppointmentModel
                 {
-                    Id = newItem.Id,
-                    PatientInfoId = newItem.PatientInfoId,
+                    Id = await protectionProvider.EncryptIntIdAsync(newItem.Id, ProtectedIdPurpose.Appointment),
+                    PatientInfoId = await protectionProvider.EncryptIntIdAsync(patientId, ProtectedIdPurpose.Patient),
                     AppointmentDateFrom = newItem.AppointmentDateFrom,
                     AppointmentDateTo = newItem.AppointmentDateTo,
                     ReasonForVisit = newItem.ReasonForVisit,

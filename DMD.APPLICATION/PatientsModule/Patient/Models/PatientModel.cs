@@ -7,8 +7,8 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Models
 {
     public class PatientModel
     {
-        public int Id { get; set; }
-        public int ClinicProfileId { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string ClinicProfileId { get; set; } = string.Empty;
         public string PatientNumber { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }

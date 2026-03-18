@@ -1,6 +1,8 @@
 using DMD.APPLICATION.ClinicProfiles.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +14,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Update
     [JsonSchema("UpdateClinicProfileCommand")]
     public class Command : IRequest<Response>
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string ClinicName { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string EmailAddress { get; set; } = string.Empty;
@@ -29,13 +31,16 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Update
     {
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -43,11 +48,21 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Update
             try
             {
                 var clinicIdValue = httpContextAccessor.HttpContext?.User.FindFirstValue("clinicId");
-                var currentClinicId = int.TryParse(clinicIdValue, out var clinicId) ? clinicId : request.Id;
+                var requestClinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                    request.Id,
+                    ProtectedIdPurpose.Clinic);
+                var currentClinicId = int.TryParse(clinicIdValue, out var clinicId)
+                    ? clinicId
+                    : requestClinicId;
+
+                if (!currentClinicId.HasValue)
+                {
+                    return new BadRequestResponse("Authenticated clinic was not found.");
+                }
 
                 var item = await dbContext.ClinicProfiles
                     .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(x => x.Id == currentClinicId, cancellationToken);
+                    .FirstOrDefaultAsync(x => x.Id == currentClinicId.Value, cancellationToken);
 
                 if (item == null)
                 {
@@ -69,7 +84,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Update
 
                 return new SuccessResponse<ClinicProfileModel>(new ClinicProfileModel
                 {
-                    Id = item.Id,
+                    Id = await protectionProvider.EncryptIntIdAsync(item.Id, ProtectedIdPurpose.Clinic),
                     ClinicName = item.ClinicName,
                     Address = item.Address,
                     EmailAddress = item.EmailAddress,

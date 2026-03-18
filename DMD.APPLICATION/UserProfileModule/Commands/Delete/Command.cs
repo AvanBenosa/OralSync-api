@@ -1,6 +1,8 @@
 using DMD.APPLICATION.Responses;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.DOMAIN.Entities.UserProfile;
 using DMD.DOMAIN.Enums;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -20,13 +22,16 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Delete
     {
         private readonly UserManager<UserProfile> userManager;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public CommandHandler(
             UserManager<UserProfile> userManager,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.userManager = userManager;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
@@ -39,9 +44,18 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Delete
                     return new BadRequestResponse("Authenticated clinic was not found.");
                 }
 
+                var decryptedUserId = await protectionProvider.DecryptStringIdAsync(
+                    request.Id,
+                    ProtectedIdPurpose.User);
+
+                if (string.IsNullOrWhiteSpace(decryptedUserId))
+                {
+                    return new BadRequestResponse("User profile was not found.");
+                }
+
                 var user = await userManager.Users
                     .FirstOrDefaultAsync(
-                        x => x.Id == request.Id && x.ClinicId == clinicId,
+                        x => x.Id == decryptedUserId && x.ClinicId == clinicId,
                         cancellationToken);
 
                 if (user == null)
@@ -60,7 +74,7 @@ namespace DMD.APPLICATION.UserProfileModule.Commands.Delete
                     return new BadRequestResponse(string.Join(", ", deleteResult.Errors.Select(x => x.Description)));
                 }
 
-                return new SuccessResponse<string>(user.Id);
+                return new SuccessResponse<string>(await protectionProvider.EncryptStringIdAsync(user.Id, ProtectedIdPurpose.User) ?? string.Empty);
             }
             catch (Exception error)
             {

@@ -1,5 +1,7 @@
 using DMD.APPLICATION.Auth.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.DOMAIN.Entities.UserProfile;
+using DMD.SERVICES.ProtectionProvider;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -29,6 +31,7 @@ namespace DMD.APPLICATION.Auth
         internal static AuthResponse Create(
             UserProfile user,
             IConfiguration configuration,
+            IProtectionProvider protectionProvider,
             string? clinicName = null,
             bool isDataPrivacyAccepted = false,
             bool isLocked = false)
@@ -39,13 +42,13 @@ namespace DMD.APPLICATION.Auth
                 RequiresRegistration = IsBootstrapSeedUser(user, configuration),
                 User = new UserDto
                 {
-                    Id = user.Id,
+                    Id = protectionProvider.EncryptStringIdAsync(user.Id, ProtectedIdPurpose.User).GetAwaiter().GetResult() ?? string.Empty,
                     UserName = user.UserName ?? string.Empty,
                     FirstName = user.FirstName ?? string.Empty,
                     LastName = user.LastName ?? string.Empty,
                     Name = user.FullName,
                     Email = user.Email ?? user.EmailAddress ?? string.Empty,
-                    ClinicId = user.ClinicId,
+                    ClinicId = protectionProvider.EncryptNullableIntIdAsync(user.ClinicId, ProtectedIdPurpose.Clinic).GetAwaiter().GetResult(),
                     ClinicName = clinicName?.Trim() ?? string.Empty,
                     Role = user.Role.ToString().ToLowerInvariant(),
                     RoleLabel = user.RoleLabel,

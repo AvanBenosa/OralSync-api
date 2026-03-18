@@ -37,10 +37,6 @@ namespace DMD.SERVICES.ProtectionProvider
         {
             return await Task.Run(() =>
             {
-                var env = appConfig.GetSection("Environment").Value;
-                if (!string.IsNullOrEmpty(env) && env.ToLower() !=
-                    GetStringEnv(EnvVariables.Local).ToLower()) return item;
-
                 var protector = provider.CreateProtector(purpose);
                 return protector.Protect(item);
             });
@@ -60,10 +56,6 @@ namespace DMD.SERVICES.ProtectionProvider
         {
             return await Task.Run(() =>
             {
-                var env = appConfig.GetSection("Environment").Value;
-                if (!string.IsNullOrEmpty(env) && env.ToLower() !=
-                    GetStringEnv(EnvVariables.Local).ToLower()) return item;
-
                 var protector = provider.CreateProtector(purpose);
                 return protector.Unprotect(item);
             });

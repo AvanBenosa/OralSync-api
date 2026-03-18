@@ -1,6 +1,8 @@
 using DMD.APPLICATION.ClinicProfiles.Models;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +18,16 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetDataPrivacyStatus
     {
         private readonly DmdDbContext dbContext;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
         public QueryHandler(
             DmdDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
@@ -39,13 +44,6 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetDataPrivacyStatus
                     .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(item => item.Id == clinicId)
-                    .Select(item => new DataPrivacyStatusModel
-                    {
-                        ClinicId = item.Id,
-                        ClinicName = item.ClinicName,
-                        IsDataPrivacyAccepted = item.IsDataPrivacyAccepted,
-                        IsLocked = item.IsLocked
-                    })
                     .FirstOrDefaultAsync(cancellationToken);
 
                 if (clinic == null)
@@ -53,7 +51,13 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetDataPrivacyStatus
                     return new NotFoundResponse("Clinic profile was not found.");
                 }
 
-                return new SuccessResponse<DataPrivacyStatusModel>(clinic);
+                return new SuccessResponse<DataPrivacyStatusModel>(new DataPrivacyStatusModel
+                {
+                    ClinicId = await protectionProvider.EncryptIntIdAsync(clinic.Id, ProtectedIdPurpose.Clinic),
+                    ClinicName = clinic.ClinicName,
+                    IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
+                    IsLocked = clinic.IsLocked
+                });
             }
             catch (Exception error)
             {

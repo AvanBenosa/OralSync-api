@@ -76,7 +76,7 @@
         public string LastName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public int? ClinicId { get; set; }
+        public string? ClinicId { get; set; }
         public string ClinicName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string RoleLabel { get; set; } = string.Empty;

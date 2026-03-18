@@ -1,9 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
+using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.PatientsModule.Patient.Models;
 using DMD.APPLICATION.Responses;
 using DMD.DOMAIN.Entities.Patients;
 using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
+using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -15,34 +17,42 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
     [JsonSchema("CreateCommand")]
     public class Command : IRequest<Response>
     {
-        public int ClinicProfileId { get; set; }
-        public string PatientNumber { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string MiddleName { get; set; }
-        public string EmailAddress { get; set; }
+        public string ClinicProfileId { get; set; } = string.Empty;
+        public string PatientNumber { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string MiddleName { get; set; } = string.Empty;
+        public string EmailAddress { get; set; } = string.Empty;
         public DateTime? BirthDate { get; set; }
-        public string ContactNumber { get; set; }
-        public string Address { get; set; }
+        public string ContactNumber { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
         public Suffix Suffix { get; set; }
-        public string Occupation { get; set; }
-        public string Religion { get; set; }
+        public string Occupation { get; set; } = string.Empty;
+        public string Religion { get; set; } = string.Empty;
         public BloodTypes BloodType { get; set; }
         public CivilStatus CivilStatus { get; set; }
-        public string ProfilePicture { get; set; }
+        public string ProfilePicture { get; set; } = string.Empty;
     }
+
     public class CommandHandler : IRequestHandler<Command, Response>
     {
         private readonly DmdDbContext dbContext;
         private readonly IMapper mapper;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IProtectionProvider protectionProvider;
 
-        public CommandHandler(DmdDbContext dbContext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public CommandHandler(
+            DmdDbContext dbContext,
+            IMapper mapper,
+            IHttpContextAccessor httpContextAccessor,
+            IProtectionProvider protectionProvider)
         {
             this.mapper = mapper;
             this.dbContext = dbContext;
             this.httpContextAccessor = httpContextAccessor;
+            this.protectionProvider = protectionProvider;
         }
+
         public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
         {
             try
@@ -56,16 +66,16 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
                 var today = DateTime.Today;
 
                 var countToday = await dbContext.PatientInfos
-                    .CountAsync(p => p.CreatedAt.Date == today);
+                    .CountAsync(p => p.CreatedAt.Date == today, cancellationToken);
 
                 var sequence = countToday + 1;
-
                 var patientNumber = $"DMD-{today:yyyyMMdd}-{sequence:D4}";
+
                 var newItem = new PatientInfo
                 {
                     ClinicProfileId = clinicId,
                     PatientNumber = patientNumber,
-                    FirstName =request.FirstName,
+                    FirstName = request.FirstName,
                     LastName = request.LastName,
                     MiddleName = request.MiddleName,
                     EmailAddress = request.EmailAddress,
@@ -78,9 +88,11 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
                 };
 
                 dbContext.PatientInfos.Add(newItem);
-                await dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 var response = mapper.Map<PatientModel>(newItem);
+                response.Id = await protectionProvider.EncryptIntIdAsync(newItem.Id, ProtectedIdPurpose.Patient);
+                response.ClinicProfileId = await protectionProvider.EncryptIntIdAsync(newItem.ClinicProfileId, ProtectedIdPurpose.Clinic);
                 return new SuccessResponse<PatientModel>(response);
             }
             catch (Exception error)

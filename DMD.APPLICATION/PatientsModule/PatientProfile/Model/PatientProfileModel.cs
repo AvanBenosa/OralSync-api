@@ -1,27 +1,22 @@
-﻿using DMD.DOMAIN.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DMD.DOMAIN.Enums;
 
 namespace DMD.APPLICATION.PatientsModule.PatientProfile.Model
 {
     public class PatientProfileModel
     {
-        public int Id { get; set; }
-        public string PatientNumber { get; set; }
-        public string ProfilePicture { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string MiddleName { get; set; }
-        public string EmailAddress { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string PatientNumber { get; set; } = string.Empty;
+        public string ProfilePicture { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string MiddleName { get; set; } = string.Empty;
+        public string EmailAddress { get; set; } = string.Empty;
         public DateTime? BirthDate { get; set; }
-        public string ContactNumber { get; set; }
-        public string Address { get; set; }
+        public string ContactNumber { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
         public Suffix Suffix { get; set; }
-        public string Occupation { get; set; }
-        public string Religion { get; set; }
+        public string Occupation { get; set; } = string.Empty;
+        public string Religion { get; set; } = string.Empty;
         public BloodTypes BloodType { get; set; }
         public CivilStatus CivilStatus { get; set; }
         public PatientTag Tag { get; set; }

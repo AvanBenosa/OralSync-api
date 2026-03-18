@@ -1,10 +1,8 @@
-using System;
-
 namespace DMD.APPLICATION.Appointment.Models
 {
     public class AppointmentModel
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string PatientInfoId { get; set; } = string.Empty;
         public DateTime AppointmentDateFrom { get; set; }
         public DateTime AppointmentDateTo { get; set; }
