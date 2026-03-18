@@ -30,7 +30,8 @@ namespace DMD.APPLICATION.Auth
             UserProfile user,
             IConfiguration configuration,
             string? clinicName = null,
-            bool isDataPrivacyAccepted = false)
+            bool isDataPrivacyAccepted = false,
+            bool isLocked = false)
         {
             return new AuthResponse
             {
@@ -49,6 +50,7 @@ namespace DMD.APPLICATION.Auth
                     Role = user.Role.ToString().ToLowerInvariant(),
                     RoleLabel = user.RoleLabel,
                     IsDataPrivacyAccepted = isDataPrivacyAccepted,
+                    IsLocked = isLocked,
                     ContactNumber = user.ContactNumber,
                     CreatedAt = DateTime.UtcNow.ToString("O"),
                 }

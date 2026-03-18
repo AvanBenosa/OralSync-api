@@ -43,7 +43,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetDataPrivacyStatus
                     {
                         ClinicId = item.Id,
                         ClinicName = item.ClinicName,
-                        IsDataPrivacyAccepted = item.IsDataPrivacyAccepted
+                        IsDataPrivacyAccepted = item.IsDataPrivacyAccepted,
+                        IsLocked = item.IsLocked
                     })
                     .FirstOrDefaultAsync(cancellationToken);
 

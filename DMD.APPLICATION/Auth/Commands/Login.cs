@@ -77,17 +77,19 @@ namespace DMD.APPLICATION.Auth.Commands
 
                 var clinicName = string.Empty;
                 var isDataPrivacyAccepted = false;
+                var isLocked = false;
                 if (user.ClinicId.HasValue)
                 {
                     var facility = await dbContext.ClinicProfiles.AsNoTracking()
                         .Where(x => x.Id == user.ClinicId)
-                        .Select(x => new { x.ClinicName, x.IsDataPrivacyAccepted })
+                        .Select(x => new { x.ClinicName, x.IsDataPrivacyAccepted, x.IsLocked })
                         .FirstOrDefaultAsync();
 
                     if (facility != null)
                     {
                         clinicName = facility.ClinicName;
                         isDataPrivacyAccepted = facility.IsDataPrivacyAccepted;
+                        isLocked = facility.IsLocked;
                     }
                 }
 
@@ -95,7 +97,8 @@ namespace DMD.APPLICATION.Auth.Commands
                     user,
                     configuration,
                     clinicName,
-                    isDataPrivacyAccepted);
+                    isDataPrivacyAccepted,
+                    isLocked);
 
                 return new SuccessResponse<LoginAuthResponse>(authResponse);
             }

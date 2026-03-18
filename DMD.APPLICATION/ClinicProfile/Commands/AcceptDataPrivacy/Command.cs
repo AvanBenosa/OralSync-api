@@ -51,7 +51,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.AcceptDataPrivacy
                 {
                     ClinicId = clinic.Id,
                     ClinicName = clinic.ClinicName,
-                    IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted
+                    IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
+                    IsLocked = clinic.IsLocked
                 });
             }
             catch (Exception error)
