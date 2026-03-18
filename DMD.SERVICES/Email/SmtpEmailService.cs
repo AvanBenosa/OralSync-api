@@ -23,9 +23,13 @@ namespace DMD.SERVICES.Email
         {
             ValidateSettings();
 
+            var fromName = string.IsNullOrWhiteSpace(emailSettings.FromName)
+                ? emailSettings.FromEmail
+                : emailSettings.FromName;
+
             using var message = new MailMessage
             {
-                From = new MailAddress(emailSettings.FromEmail, emailSettings.FromName),
+                From = new MailAddress(emailSettings.FromEmail, fromName),
                 Subject = request.Subject,
                 Body = request.Body,
                 IsBodyHtml = false
@@ -33,17 +37,27 @@ namespace DMD.SERVICES.Email
 
             message.To.Add(request.RecipientEmail);
 
+            var credentials = emailSettings.BuildCredentials();
             using var client = new SmtpClient(emailSettings.Host, emailSettings.Port)
             {
                 EnableSsl = emailSettings.EnableSsl,
-                Credentials = new NetworkCredential(emailSettings.UserName, emailSettings.Password)
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = emailSettings.UseDefaultCredentials,
+                Timeout = emailSettings.TimeoutMilliseconds
             };
 
+            if (credentials is not null)
+            {
+                client.Credentials = credentials;
+            }
+
             logger.LogInformation(
-                "Sending SMTP patient email to {RecipientEmail} using host {Host}:{Port}",
+                "Sending SMTP patient email to {RecipientEmail} using host {Host}:{Port}. SSL: {EnableSsl}, DefaultCredentials: {UseDefaultCredentials}",
                 request.RecipientEmail,
                 emailSettings.Host,
-                emailSettings.Port);
+                emailSettings.Port,
+                emailSettings.EnableSsl,
+                emailSettings.UseDefaultCredentials);
 
             cancellationToken.ThrowIfCancellationRequested();
             await client.SendMailAsync(message, cancellationToken);
@@ -61,12 +75,22 @@ namespace DMD.SERVICES.Email
                 throw new InvalidOperationException("EmailSettings:FromEmail is not configured.");
             }
 
-            if (string.IsNullOrWhiteSpace(emailSettings.UserName))
+            if (emailSettings.Port <= 0)
+            {
+                throw new InvalidOperationException("EmailSettings:Port must be greater than zero.");
+            }
+
+            if (emailSettings.TimeoutMilliseconds <= 0)
+            {
+                throw new InvalidOperationException("EmailSettings:TimeoutMilliseconds must be greater than zero.");
+            }
+
+            if (!emailSettings.UseDefaultCredentials && string.IsNullOrWhiteSpace(emailSettings.UserName))
             {
                 throw new InvalidOperationException("EmailSettings:UserName is not configured.");
             }
 
-            if (string.IsNullOrWhiteSpace(emailSettings.Password))
+            if (!emailSettings.UseDefaultCredentials && string.IsNullOrWhiteSpace(emailSettings.Password))
             {
                 throw new InvalidOperationException("EmailSettings:Password is not configured.");
             }

@@ -1,5 +1,4 @@
 using DMD.SERVICES.Email;
-using DMD.SERVICES.Email.Models;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.SqlServer;
@@ -7,9 +6,7 @@ using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
-builder.Services.AddScoped<IEmailSenderJob, EmailSenderJob>();
+builder.Services.AddDmdEmailServices(builder.Configuration);
 
 builder.Services.AddHangfire((serviceProvider, configuration) =>
 {
