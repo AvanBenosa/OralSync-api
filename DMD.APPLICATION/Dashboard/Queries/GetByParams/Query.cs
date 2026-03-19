@@ -47,9 +47,13 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                     .AsNoTracking()
                     .CountAsync(x => x.CreatedAt >= today && x.CreatedAt < tomorrow, cancellationToken);
 
-                var requests = await dbContext.AppointmentRequests
+                var scheduledAppointments = await dbContext.AppointmentRequests
                     .AsNoTracking()
                     .CountAsync(x => x.Status == AppointmentStatus.Scheduled, cancellationToken);
+
+                var pendingAppointments = await dbContext.AppointmentRequests
+                    .AsNoTracking()
+                    .CountAsync(x => x.Status == AppointmentStatus.Pending, cancellationToken);
 
                 var incomeToday = await dbContext.PatientProgressNotes
                     .AsNoTracking()
@@ -124,7 +128,8 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                 {
                     TotalPatients = totalPatients,
                     PatientsToday = patientsToday,
-                    Requests = requests,
+                    ScheduledAppointments = scheduledAppointments,
+                    PendingAppointments = pendingAppointments,
                     IncomeToday = incomeToday,
                     TotalIncomeMonthly = totalIncomeMonthly,
                     LatestPatients = latestPatients,

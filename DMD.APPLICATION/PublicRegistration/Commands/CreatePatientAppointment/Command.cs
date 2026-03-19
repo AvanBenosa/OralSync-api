@@ -16,6 +16,7 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
     public class Command : IRequest<Response>
     {
         public string ClinicId { get; set; } = string.Empty;
+        public string ExistingPatientId { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string MiddleName { get; set; } = string.Empty;
@@ -49,7 +50,8 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
                 if (string.IsNullOrWhiteSpace(request.ClinicId))
                     return new BadRequestResponse("Clinic id is required.");
 
-                if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+                if (string.IsNullOrWhiteSpace(request.ExistingPatientId) &&
+                    (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName)))
                     return new BadRequestResponse("Patient first name and last name are required.");
 
                 if (request.AppointmentDateFrom >= request.AppointmentDateTo)
@@ -75,9 +77,9 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
 
                 var hasConflict = await (
                     from appointment in dbContext.AppointmentRequests.AsNoTracking()
-                    join patient in dbContext.PatientInfos.AsNoTracking()
-                        on appointment.PatientInfoId equals patient.Id.ToString()
-                    where patient.ClinicProfileId == clinicId.Value
+                    join patientInfo in dbContext.PatientInfos.AsNoTracking()
+                        on appointment.PatientInfoId equals patientInfo.Id.ToString()
+                    where patientInfo.ClinicProfileId == clinicId.Value
                           && appointment.Status != AppointmentStatus.Cancelled
                           && appointment.AppointmentDateFrom < request.AppointmentDateTo
                           && appointment.AppointmentDateTo > request.AppointmentDateFrom
@@ -87,42 +89,61 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
                 if (hasConflict)
                     return new BadRequestResponse("Appointment schedule conflicts with an existing appointment.");
 
-                var today = DateTime.Today;
-                var countToday = await dbContext.PatientInfos
-                    .IgnoreQueryFilters()
-                    .CountAsync(p => p.CreatedAt.Date == today, cancellationToken);
-
-                var patientNumber = $"DMD-{today:yyyyMMdd}-{(countToday + 1):D4}";
-
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+                PatientInfo patient;
 
-                var newPatient = new PatientInfo
+                if (!string.IsNullOrWhiteSpace(request.ExistingPatientId))
                 {
-                    ClinicProfileId = clinicId.Value,
-                    PatientNumber = patientNumber,
-                    FirstName = request.FirstName.Trim(),
-                    LastName = request.LastName.Trim(),
-                    MiddleName = request.MiddleName?.Trim() ?? string.Empty,
-                    EmailAddress = request.EmailAddress?.Trim() ?? string.Empty,
-                    BirthDate = request.BirthDate,
-                    ContactNumber = request.ContactNumber?.Trim() ?? string.Empty,
-                    Address = request.Address?.Trim() ?? string.Empty,
-                    Occupation = request.Occupation?.Trim() ?? string.Empty,
-                    Religion = request.Religion?.Trim() ?? string.Empty,
-                    ProfilePicture = string.Empty,
-                };
+                    var existingPatientId = await protectionProvider.DecryptIntIdAsync(
+                        request.ExistingPatientId,
+                        ProtectedIdPurpose.Patient);
 
-                dbContext.PatientInfos.Add(newPatient);
-                await dbContext.SaveChangesAsync(cancellationToken);
+                    patient = await dbContext.PatientInfos
+                        .FirstOrDefaultAsync(
+                            x => x.Id == existingPatientId && x.ClinicProfileId == clinicId.Value,
+                            cancellationToken);
+
+                    if (patient == null)
+                        return new BadRequestResponse("Selected patient does not exist in this clinic.");
+                }
+                else
+                {
+                    var today = DateTime.Today;
+                    var countToday = await dbContext.PatientInfos
+                        .IgnoreQueryFilters()
+                        .CountAsync(p => p.CreatedAt.Date == today, cancellationToken);
+
+                    var patientNumber = $"DMD-{today:yyyyMMdd}-{(countToday + 1):D4}";
+
+                    patient = new PatientInfo
+                    {
+                        ClinicProfileId = clinicId.Value,
+                        PatientNumber = patientNumber,
+                        FirstName = request.FirstName.Trim(),
+                        LastName = request.LastName.Trim(),
+                        MiddleName = request.MiddleName?.Trim() ?? string.Empty,
+                        EmailAddress = request.EmailAddress?.Trim() ?? string.Empty,
+                        BirthDate = request.BirthDate,
+                        ContactNumber = request.ContactNumber?.Trim() ?? string.Empty,
+                        Address = request.Address?.Trim() ?? string.Empty,
+                        Occupation = request.Occupation?.Trim() ?? string.Empty,
+                        Religion = request.Religion?.Trim() ?? string.Empty,
+                        ProfilePicture = string.Empty,
+                    };
+
+                    dbContext.PatientInfos.Add(patient);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
 
                 var newAppointment = new AppointmentRequest
                 {
-                    PatientInfoId = newPatient.Id.ToString(),
+                    PatientInfoId = patient.Id.ToString(),
                     AppointmentDateFrom = request.AppointmentDateFrom,
                     AppointmentDateTo = request.AppointmentDateTo,
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,
-                    Status = AppointmentStatus.Scheduled,
+                    Status = AppointmentStatus.Pending,
                     Remarks = request.Remarks?.Trim() ?? string.Empty,
+                    AppointmentType = AppointmentType.Online,
                 };
 
                 dbContext.AppointmentRequests.Add(newAppointment);
@@ -134,8 +155,8 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
                     {
                         ClinicId = request.ClinicId,
                         ClinicName = clinic.ClinicName,
-                        PatientId = await protectionProvider.EncryptIntIdAsync(newPatient.Id, ProtectedIdPurpose.Patient),
-                        PatientNumber = newPatient.PatientNumber,
+                        PatientId = await protectionProvider.EncryptIntIdAsync(patient.Id, ProtectedIdPurpose.Patient),
+                        PatientNumber = patient.PatientNumber,
                         AppointmentId = await protectionProvider.EncryptIntIdAsync(newAppointment.Id, ProtectedIdPurpose.Appointment),
                         AppointmentDateFrom = newAppointment.AppointmentDateFrom,
                         AppointmentDateTo = newAppointment.AppointmentDateTo,

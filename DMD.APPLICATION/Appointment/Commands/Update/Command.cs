@@ -93,6 +93,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                     ReasonForVisit = item.ReasonForVisit,
                     Status = item.Status.ToString(),
                     Remarks = item.Remarks,
+                    AppointmentType = item.AppointmentType.ToString(),
                     PatientNumber = patient.PatientNumber ?? string.Empty,
                     PatientName = string.IsNullOrWhiteSpace(patient.LastName)
                         ? patientName

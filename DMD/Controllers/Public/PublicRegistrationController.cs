@@ -27,6 +27,20 @@ namespace DMD.API.Controllers.Public
         }
 
         [AllowAnonymous]
+        [HttpGet("existing-patient")]
+        [Description("Find an existing patient record for public appointment registration")]
+        [ProducesResponseType(typeof(PublicExistingPatientLookupModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> FindExistingPatient([FromQuery] Queries.FindExistingPatient.Query query)
+        {
+            var result = await Mediator.Send(query);
+            if (result is BadRequestResponse)
+                return BadRequest(result.Message);
+
+            var data = ((SuccessResponse<PublicExistingPatientLookupModel>)result).Data;
+            return Ok(data);
+        }
+
+        [AllowAnonymous]
         [HttpPost("create-patient-appointment")]
         [Description("Create patient info and appointment request using public clinic QR context")]
         [ProducesResponseType(typeof(PublicPatientAppointmentRegistrationModel), (int)HttpStatusCode.Created)]

@@ -74,7 +74,9 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
                     AppointmentDateTo = request.AppointmentDateTo,
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,
                     Status = status,
-                    Remarks = request.Remarks?.Trim() ?? string.Empty
+                    Remarks = request.Remarks?.Trim() ?? string.Empty,
+                    AppointmentType = AppointmentType.WalkIn
+                    
                 };
 
                 dbContext.AppointmentRequests.Add(newItem);
@@ -93,6 +95,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
                     ReasonForVisit = newItem.ReasonForVisit,
                     Status = newItem.Status.ToString(),
                     Remarks = newItem.Remarks,
+                    AppointmentType = newItem.AppointmentType.ToString(),
                     PatientNumber = patient.PatientNumber ?? string.Empty,
                     PatientName = string.IsNullOrWhiteSpace(patient.LastName)
                         ? patientName

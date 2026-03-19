@@ -11,5 +11,6 @@ namespace DMD.APPLICATION.Appointment.Models
         public string Remarks { get; set; } = string.Empty;
         public string PatientName { get; set; } = string.Empty;
         public string PatientNumber { get; set; } = string.Empty;
+        public string AppointmentType { get; set; } = string.Empty;
     }
 }

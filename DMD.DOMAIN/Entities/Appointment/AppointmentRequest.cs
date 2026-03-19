@@ -13,5 +13,6 @@ namespace DMD.DOMAIN.Entities.Appointment
         public string ReasonForVisit { get; set; }
         public AppointmentStatus Status { get; set; }
         public string Remarks { get; set; }
+        public AppointmentType AppointmentType { get;set;  }
     }
 }

@@ -103,6 +103,7 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                             ReasonForVisit = x.ReasonForVisit ?? string.Empty,
                             Status = x.Status.ToString(),
                             Remarks = x.Remarks ?? string.Empty,
+                            AppointmentType = x.AppointmentType.ToString(),
                             PatientName = patient?.PatientName ?? string.Empty,
                             PatientNumber = patient?.PatientNumber ?? string.Empty
                         };

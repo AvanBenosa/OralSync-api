@@ -9,6 +9,7 @@ namespace DMD.DOMAIN.Enums.Appointment
     public enum AppointmentStatus
     {
         None,
+        Pending,
         Scheduled,
         Completed,
         Cancelled,

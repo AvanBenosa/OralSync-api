@@ -4,7 +4,8 @@ namespace DMD.APPLICATION.Dashboard.Models
     {
         public int TotalPatients { get; set; }
         public int PatientsToday { get; set; }
-        public int Requests { get; set; }
+        public int ScheduledAppointments { get; set; }
+        public int PendingAppointments { get; set; }
         public double IncomeToday { get; set; }
         public double TotalIncomeMonthly { get; set; }
         public List<DashboardPatientItemModel> LatestPatients { get; set; } = new();
