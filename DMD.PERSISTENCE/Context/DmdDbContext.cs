@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
 using DMD.DOMAIN.Enums;
+using DMD.DOMAIN.Entities.Buildups;
 
 namespace DMD.PERSISTENCE.Context
 {
@@ -33,6 +34,12 @@ namespace DMD.PERSISTENCE.Context
                     || (CurrentClinicId.HasValue && item.Id == CurrentClinicId.GetValueOrDefault()));
 
             builder.Entity<PatientInfo>()
+                .HasQueryFilter(item =>
+                    ShouldBypassClinicFilter
+                    || (CurrentClinicId.HasValue
+                        && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
+
+            builder.Entity<FormTemplate>()
                 .HasQueryFilter(item =>
                     ShouldBypassClinicFilter
                     || (CurrentClinicId.HasValue

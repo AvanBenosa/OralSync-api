@@ -71,12 +71,23 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                 if (hasConflict)
                     return new BadRequestResponse("Appointment schedule conflicts with an existing appointment.");
 
+                var shouldResetSmsReminder =
+                    item.AppointmentDateFrom.Date != request.AppointmentDateFrom.Date
+                    || item.Status != status;
+
                 item.PatientInfoId = patientId.ToString();
                 item.AppointmentDateFrom = request.AppointmentDateFrom;
                 item.AppointmentDateTo = request.AppointmentDateTo;
                 item.ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty;
                 item.Status = status;
                 item.Remarks = request.Remarks?.Trim() ?? string.Empty;
+
+                if (shouldResetSmsReminder)
+                {
+                    item.SmsReminderSentForDate = status == AppointmentStatus.Scheduled
+                        ? ResolveInitialSmsReminderSentForDate(request.AppointmentDateFrom)
+                        : null;
+                }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -112,6 +123,13 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
             {
                 await dbContext.DisposeAsync();
             }
+        }
+
+        private static DateTime? ResolveInitialSmsReminderSentForDate(DateTime appointmentDateFrom)
+        {
+            return DateTime.Now.Date != appointmentDateFrom.Date
+                ? appointmentDateFrom.AddDays(-1).Date
+                : null;
         }
     }
 }

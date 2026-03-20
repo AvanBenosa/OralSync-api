@@ -17,7 +17,6 @@ namespace DMD.DOMAIN.Enums
         Crown,
         Missing,
         Implant,
-        RootCanal,
         RootCanalTreated
     }
 }

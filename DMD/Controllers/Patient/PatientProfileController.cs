@@ -50,5 +50,18 @@ namespace DMD.API.Controllers.Patient
             var data = ((SuccessResponse<PatientEmailResponseModel>)result).Data;
             return Ok(data);
         }
+
+        [HttpPost("send-sms")]
+        [Description("Queue a patient SMS using Hangfire")]
+        [ProducesResponseType(typeof(PatientSmsResponseModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> SendSms([FromBody] Commands.SendSms.Command command)
+        {
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+                return BadRequest(result.Message);
+
+            var data = ((SuccessResponse<PatientSmsResponseModel>)result).Data;
+            return Ok(data);
+        }
     }
 }

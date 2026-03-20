@@ -4,6 +4,7 @@ using DMD.PERSISTENCE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    partial class DmdDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260320053702_1")]
+    partial class _1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -86,56 +89,6 @@ namespace DMD.PERSISTENCE.Migrations
                     b.HasIndex("PatientInfoId1");
 
                     b.ToTable("AppointmentRequests");
-                });
-
-            modelBuilder.Entity("DMD.DOMAIN.Entities.Buildups.FormTemplate", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClinicProfileId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastUpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LastUpdatedById")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TemplateContent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TemplateName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClinicProfileId");
-
-                    b.ToTable("FormTemplate");
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientEmergencyContact", b =>
@@ -1258,15 +1211,6 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasForeignKey("PatientInfoId1");
                 });
 
-            modelBuilder.Entity("DMD.DOMAIN.Entities.Buildups.FormTemplate", b =>
-                {
-                    b.HasOne("DMD.DOMAIN.Entities.UserProfile.ClinicProfile", null)
-                        .WithMany("FormTemplates")
-                        .HasForeignKey("ClinicProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientEmergencyContact", b =>
                 {
                     b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
@@ -1429,8 +1373,6 @@ namespace DMD.PERSISTENCE.Migrations
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.UserProfile.ClinicProfile", b =>
                 {
-                    b.Navigation("FormTemplates");
-
                     b.Navigation("Patients");
                 });
 #pragma warning restore 612, 618

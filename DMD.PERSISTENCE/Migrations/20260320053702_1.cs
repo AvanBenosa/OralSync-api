@@ -394,6 +394,7 @@ namespace DMD.PERSISTENCE.Migrations
                     PatientInfoId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AppointmentDateFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     AppointmentDateTo = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SmsReminderSentForDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ReasonForVisit = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),

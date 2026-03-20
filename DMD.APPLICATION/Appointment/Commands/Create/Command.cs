@@ -20,6 +20,8 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
         public string ReasonForVisit { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string Remarks { get; set; } = string.Empty;
+        public DateTime? SmsReminderSentForDate { get; set; }
+
     }
 
     public class CommandHandler : IRequestHandler<Command, Response>
@@ -75,8 +77,10 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,
                     Status = status,
                     Remarks = request.Remarks?.Trim() ?? string.Empty,
-                    AppointmentType = AppointmentType.WalkIn
-                    
+                    AppointmentType = AppointmentType.WalkIn,
+                    SmsReminderSentForDate = status == AppointmentStatus.Scheduled
+                        ? ResolveInitialSmsReminderSentForDate(request.AppointmentDateFrom)
+                        : null
                 };
 
                 dbContext.AppointmentRequests.Add(newItem);
@@ -114,6 +118,13 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
             {
                 await dbContext.DisposeAsync();
             }
+        }
+
+        private static DateTime? ResolveInitialSmsReminderSentForDate(DateTime appointmentDateFrom)
+        {
+            return DateTime.Now.Date != appointmentDateFrom.Date
+                ? appointmentDateFrom.AddDays(-1).Date
+                : null;
         }
     }
 }

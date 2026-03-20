@@ -1,6 +1,7 @@
 using DMD.SERVICES;
 using DMD.SERVICES.Email;
 using DMD.SERVICES.ProtectionProvider;
+using DMD.SERVICES.Sms;
 using DMD.API.Storage;
 
 namespace DMD.API.Configurations
@@ -15,6 +16,7 @@ namespace DMD.API.Configurations
             builder.Services.AddScoped<IProtectionProvider, ProtectionProvider>();
             builder.Services.AddScoped<IClinicStorageService, LocalClinicStorageService>();
             builder.Services.AddDmdEmailServices(builder.Configuration);
+            builder.Services.AddDmdSmsServices(builder.Configuration);
         }
     }
 }

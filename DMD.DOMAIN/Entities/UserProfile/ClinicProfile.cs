@@ -1,3 +1,4 @@
+using DMD.DOMAIN.Entities.Buildups;
 using DMD.DOMAIN.Entities.Patients;
 
 namespace DMD.DOMAIN.Entities.UserProfile
@@ -23,5 +24,6 @@ namespace DMD.DOMAIN.Entities.UserProfile
         public bool IsSaturdayOpen { get; set; }
         public bool IsSundayOpen { get; set; }
         public List<PatientInfo> Patients { get; set; } = new();
+        public List<FormTemplate>FormTemplates { get; set; } = new();
     }
 }
