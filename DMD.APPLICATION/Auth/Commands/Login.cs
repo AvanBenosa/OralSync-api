@@ -80,18 +80,20 @@ namespace DMD.APPLICATION.Auth.Commands
                 }
 
                 var clinicName = string.Empty;
+                var bannerImagePath = string.Empty;
                 var isDataPrivacyAccepted = false;
                 var isLocked = false;
                 if (user.ClinicId.HasValue)
                 {
                     var facility = await dbContext.ClinicProfiles.AsNoTracking()
                         .Where(x => x.Id == user.ClinicId)
-                        .Select(x => new { x.ClinicName, x.IsDataPrivacyAccepted, x.IsLocked })
+                        .Select(x => new { x.ClinicName, x.BannerImagePath, x.IsDataPrivacyAccepted, x.IsLocked })
                         .FirstOrDefaultAsync();
 
                     if (facility != null)
                     {
                         clinicName = facility.ClinicName;
+                        bannerImagePath = facility.BannerImagePath;
                         isDataPrivacyAccepted = facility.IsDataPrivacyAccepted;
                         isLocked = facility.IsLocked;
                     }
@@ -103,7 +105,8 @@ namespace DMD.APPLICATION.Auth.Commands
                     protectionProvider,
                     clinicName,
                     isDataPrivacyAccepted,
-                    isLocked);
+                    isLocked,
+                    bannerImagePath);
 
                 return new SuccessResponse<LoginAuthResponse>(authResponse);
             }

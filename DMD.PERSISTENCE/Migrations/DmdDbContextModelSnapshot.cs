@@ -131,6 +131,9 @@ namespace DMD.PERSISTENCE.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClinicProfileId");
@@ -204,6 +207,10 @@ namespace DMD.PERSISTENCE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AssignedDoctor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -216,7 +223,7 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<DateTime?>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("FormType")
+                    b.Property<int>("FormTemplateId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")

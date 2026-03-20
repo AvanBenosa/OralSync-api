@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using System.IO;
 using DMD.SERVICES.Email.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,10 +33,23 @@ namespace DMD.SERVICES.Email
                 From = new MailAddress(emailSettings.FromEmail, fromName),
                 Subject = request.Subject,
                 Body = request.Body,
-                IsBodyHtml = false
+                IsBodyHtml = request.IsBodyHtml
             };
 
             message.To.Add(request.RecipientEmail);
+
+            foreach (var attachment in request.Attachments ?? new List<PatientEmailAttachmentJobRequest>())
+            {
+                var contentStream = new MemoryStream(attachment.Content);
+                var mailAttachment = new Attachment(
+                    contentStream,
+                    attachment.FileName,
+                    string.IsNullOrWhiteSpace(attachment.ContentType)
+                        ? "application/octet-stream"
+                        : attachment.ContentType);
+
+                message.Attachments.Add(mailAttachment);
+            }
 
             var credentials = emailSettings.BuildCredentials();
             using var client = new SmtpClient(emailSettings.Host, emailSettings.Port)

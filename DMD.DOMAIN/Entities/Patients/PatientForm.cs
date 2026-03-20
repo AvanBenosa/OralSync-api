@@ -12,6 +12,8 @@ namespace DMD.DOMAIN.Entities.Patients
         public int PatientInfoId { get; set; }
         public DateTime? Date { get; set; }
         public string Remarks { get; set;  }
-        public PatientFormTypes FormType { get; set; }
+        public string AssignedDoctor { get; set; }
+
+        public int FormTemplateId { get; set; }
     }
 }

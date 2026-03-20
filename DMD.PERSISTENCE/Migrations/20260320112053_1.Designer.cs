@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    [Migration("20260320062228_2")]
-    partial class _2
+    [Migration("20260320112053_1")]
+    partial class _1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -134,11 +134,14 @@ namespace DMD.PERSISTENCE.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClinicProfileId");
 
-                    b.ToTable("FormTemplate");
+                    b.ToTable("FormTemplates");
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientEmergencyContact", b =>
@@ -207,6 +210,10 @@ namespace DMD.PERSISTENCE.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AssignedDoctor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -219,7 +226,7 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<DateTime?>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("FormType")
+                    b.Property<int>("FormTemplateId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")

@@ -39,7 +39,8 @@ namespace DMD.APPLICATION.Auth
             IProtectionProvider protectionProvider,
             string? clinicName = null,
             bool isDataPrivacyAccepted = false,
-            bool isLocked = false)
+            bool isLocked = false,
+            string? bannerImagePath = null)
         {
             var portalType = IsBootstrapSeedUser(user, configuration) ? "admin" : "clinic";
 
@@ -57,6 +58,7 @@ namespace DMD.APPLICATION.Auth
                     Email = user.Email ?? user.EmailAddress ?? string.Empty,
                     ClinicId = protectionProvider.EncryptNullableIntIdAsync(user.ClinicId, ProtectedIdPurpose.Clinic).GetAwaiter().GetResult(),
                     ClinicName = clinicName?.Trim() ?? string.Empty,
+                    BannerImagePath = bannerImagePath?.Trim(),
                     Role = user.Role.ToString().ToLowerInvariant(),
                     RoleLabel = user.RoleLabel,
                     IsDataPrivacyAccepted = isDataPrivacyAccepted,

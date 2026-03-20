@@ -282,6 +282,36 @@ namespace DMD.PERSISTENCE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FormTemplates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ClinicProfileId = table.Column<int>(type: "int", nullable: false),
+                    TemplateName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TemplateContent = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FormTemplates", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FormTemplates_ClinicProfiles_ClinicProfileId",
+                        column: x => x.ClinicProfileId,
+                        principalTable: "ClinicProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PatientInfos",
                 columns: table => new
                 {
@@ -458,7 +488,8 @@ namespace DMD.PERSISTENCE.Migrations
                     PatientInfoId = table.Column<int>(type: "int", nullable: false),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FormType = table.Column<int>(type: "int", nullable: false),
+                    AssignedDoctor = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FormTemplateId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -667,6 +698,11 @@ namespace DMD.PERSISTENCE.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_FormTemplates_ClinicProfileId",
+                table: "FormTemplates",
+                column: "ClinicProfileId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PatientEmergencyContacts_PatientInfoId",
                 table: "PatientEmergencyContacts",
                 column: "PatientInfoId");
@@ -735,6 +771,9 @@ namespace DMD.PERSISTENCE.Migrations
 
             migrationBuilder.DropTable(
                 name: "ClinicRegistrationVerifications");
+
+            migrationBuilder.DropTable(
+                name: "FormTemplates");
 
             migrationBuilder.DropTable(
                 name: "PatientEmergencyContacts");

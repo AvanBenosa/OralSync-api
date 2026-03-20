@@ -78,6 +78,7 @@
         public string Email { get; set; } = string.Empty;
         public string? ClinicId { get; set; }
         public string ClinicName { get; set; } = string.Empty;
+        public string? BannerImagePath { get; set; }
         public string Role { get; set; } = string.Empty;
         public string RoleLabel { get; set; } = string.Empty;
         public bool IsDataPrivacyAccepted { get; set; }

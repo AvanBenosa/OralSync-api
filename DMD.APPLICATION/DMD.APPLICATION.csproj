@@ -27,7 +27,6 @@
     <Folder Include="Auth\Queries\" />
     <Folder Include="Appointment\" />
     <Folder Include="BuildUps\TemplateForm\" />
-    <Folder Include="PatientsModule\PatientForm\Commands\" />
   </ItemGroup>
 
 </Project>
