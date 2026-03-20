@@ -108,6 +108,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalChart.Queries.GetByParams
                             Id = await protectionProvider.EncryptIntIdAsync(image.Id, ProtectedIdPurpose.Patient),
                             PatientTeethId = model.Id,
                             FileName = image.FileName ?? string.Empty,
+                            OriginalFileName = image.OriginalFileName ?? string.Empty,
                             FilePath = image.FilePath ?? string.Empty,
                             FileType = image.FileType,
                             FileMediaType = image.FileMediaType ?? string.Empty,

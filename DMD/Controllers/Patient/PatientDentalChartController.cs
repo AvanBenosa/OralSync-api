@@ -1,4 +1,3 @@
-using DMD.APPLICATION.PatientsModule.Patient.Models;
 using DMD.APPLICATION.PatientsModule.PatientDentalChart.Models;
 using DMD.APPLICATION.Responses;
 using DMD.API.Storage;
@@ -16,6 +15,13 @@ namespace DMD.API.Controllers.Patient
         public IFormFile? File { get; set; }
         public string PatientInfoId { get; set; } = string.Empty;
         public int ToothNumber { get; set; }
+    }
+
+    public class UploadPatientDentalChartImageResponse
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
     }
 
     [Route("api/dmd/patient-dental-chart")]
@@ -90,7 +96,7 @@ namespace DMD.API.Controllers.Patient
 
         [HttpPost("upload-patient-dental-chart-image")]
         [Description("Upload patient dental chart image and return saved file path")]
-        [ProducesResponseType(typeof(ProfilePictureUploadModel), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(UploadPatientDentalChartImageResponse), (int)HttpStatusCode.OK)]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(10_000_000)]
         public async Task<IActionResult> UploadPatientDentalChartImage([FromForm] UploadPatientDentalChartImageRequest request)
@@ -133,9 +139,10 @@ namespace DMD.API.Controllers.Patient
                 request.PatientInfoId,
                 $"tooth-{request.ToothNumber}");
 
-            return Ok(new ProfilePictureUploadModel
+            return Ok(new UploadPatientDentalChartImageResponse
             {
                 FileName = storedFile.FileName,
+                OriginalFileName = file.FileName,
                 FilePath = storedFile.FilePath
             });
         }

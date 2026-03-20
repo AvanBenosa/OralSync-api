@@ -60,6 +60,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalPhotos.Queries.GetByParams
                         Condition = row.teeth.Condition,
                         ToothRemarks = row.teeth.Remarks ?? string.Empty,
                         FileName = row.image.FileName ?? string.Empty,
+                        OriginalFileName = row.image.OriginalFileName ?? string.Empty,
                         FilePath = row.image.FilePath ?? string.Empty,
                         FileType = (int)row.image.FileType,
                         FileMediaType = row.image.FileMediaType ?? string.Empty,

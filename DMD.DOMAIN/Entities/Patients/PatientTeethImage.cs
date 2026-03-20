@@ -6,6 +6,7 @@ namespace DMD.DOMAIN.Entities.Patients
     {
         public int PatientTeethId { get; set; }
         public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public FileType FileType { get; set; }
         public string FileMediaType { get; set; } = string.Empty;

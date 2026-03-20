@@ -129,6 +129,9 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalChart.Commands.Update
                     {
                         PatientTeethId = item.Id,
                         FileName = image.FileName ?? string.Empty,
+                        OriginalFileName = string.IsNullOrWhiteSpace(image.OriginalFileName)
+                            ? image.FileName ?? string.Empty
+                            : image.OriginalFileName,
                         FilePath = image.FilePath ?? string.Empty,
                         FileType = image.FileType.HasValue
                             ? (FileType)image.FileType.Value
@@ -147,6 +150,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalChart.Commands.Update
                         Id = await protectionProvider.EncryptIntIdAsync(entity.Id, ProtectedIdPurpose.Patient),
                         PatientTeethId = await protectionProvider.EncryptIntIdAsync(item.Id, ProtectedIdPurpose.Patient),
                         FileName = entity.FileName,
+                        OriginalFileName = entity.OriginalFileName,
                         FilePath = entity.FilePath,
                         FileType = entity.FileType,
                         FileMediaType = entity.FileMediaType,

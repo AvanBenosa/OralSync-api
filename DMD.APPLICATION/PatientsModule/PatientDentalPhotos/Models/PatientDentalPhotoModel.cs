@@ -11,6 +11,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalPhotos.Models
         public ToothCondition? Condition { get; set; }
         public string ToothRemarks { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public int? FileType { get; set; }
         public string FileMediaType { get; set; } = string.Empty;

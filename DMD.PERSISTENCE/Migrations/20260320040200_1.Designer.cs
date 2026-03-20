@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    [Migration("20260320031814_1")]
+    [Migration("20260320040200_1")]
     partial class _1
     {
         /// <inheritdoc />
@@ -613,6 +613,10 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastUpdatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PatientTeethId")

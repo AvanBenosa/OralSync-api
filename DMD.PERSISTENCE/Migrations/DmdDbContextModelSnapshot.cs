@@ -612,6 +612,10 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("LastUpdatedById")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("PatientTeethId")
                         .HasColumnType("int");
 

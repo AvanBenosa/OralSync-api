@@ -7,6 +7,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientDentalChart.Models
         public string Id { get; set; } = string.Empty;
         public string PatientTeethId { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public FileType? FileType { get; set; }
         public string FileMediaType { get; set; } = string.Empty;

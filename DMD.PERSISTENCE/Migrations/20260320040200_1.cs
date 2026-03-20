@@ -330,6 +330,7 @@ namespace DMD.PERSISTENCE.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     PatientTeethId = table.Column<int>(type: "int", nullable: false),
                     FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OriginalFileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FilePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FileType = table.Column<int>(type: "int", nullable: false),
                     FileMediaType = table.Column<string>(type: "nvarchar(max)", nullable: false),
