@@ -83,10 +83,12 @@ var services = scope.ServiceProvider;
 
 ApplyPendingMigrations(app);
 ConfigureEndpoints(app);
+ConfigureCors(app);
 
 await ConfigureDatabase(services);
 
 ConfigureAuthentication(app);
+app.MapGet("/health", () => Results.Ok("DMD API is running."));
 app.MapControllers();
 
 await SeedDatabase(app);

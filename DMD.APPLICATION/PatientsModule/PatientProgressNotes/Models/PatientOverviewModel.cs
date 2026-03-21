@@ -4,6 +4,8 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Models
     {
         public string Id { get; set; } = string.Empty;
         public string PatientInfoId { get; set; } = string.Empty;
+        public string PatientName { get; set; } = string.Empty;
+        public string PatientNumber { get; set; } = string.Empty;
         public string AssignedDoctor { get; set; }
         public DateTime? Date { get; set; }
         public string Procedure { get; set; } = string.Empty;

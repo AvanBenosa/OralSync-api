@@ -25,11 +25,11 @@ namespace DMD.API.Configurations
 
         internal static void ConfigureCors(WebApplication app)
         {
-            app.UseCors("default");
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
+            app.UseCors("default");
         }
 
 

@@ -34,20 +34,49 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
         {
             try
             {
-                var patientInfoId = await protectionProvider.DecryptIntIdAsync(
-                    request.PatientInfoId,
-                    ProtectedIdPurpose.Patient);
+                int? patientInfoId = null;
+                if (!string.IsNullOrWhiteSpace(request.PatientInfoId))
+                {
+                    patientInfoId = await protectionProvider.DecryptIntIdAsync(
+                        request.PatientInfoId,
+                        ProtectedIdPurpose.Patient);
+                }
 
-                var items = await dbContext.PatientProgressNotes
+                var itemsQuery =
+                    from note in dbContext.PatientProgressNotes.AsNoTracking()
+                    join patient in dbContext.PatientInfos.AsNoTracking()
+                        on note.PatientInfoId equals patient.Id
+                    select new
+                    {
+                        Note = note,
+                        Patient = patient
+                    };
+
+                if (patientInfoId.HasValue)
+                {
+                    itemsQuery = itemsQuery.Where(x => x.Note.PatientInfoId == patientInfoId.Value);
+                }
+
+                var items = await itemsQuery
                     .AsNoTracking()
-                    .Where(x => x.PatientInfoId == patientInfoId)
+                    .OrderByDescending(x => x.Note.Date)
+                    .ThenByDescending(x => x.Note.Id)
                     .ToListAsync(cancellationToken);
 
                 var response = await Task.WhenAll(items.Select(async x =>
                 {
-                    var item = mapper.Map<PatientProgressNoteModel>(x);
-                    item.Id = await protectionProvider.EncryptIntIdAsync(x.Id, ProtectedIdPurpose.Patient);
-                    item.PatientInfoId = await protectionProvider.EncryptIntIdAsync(x.PatientInfoId, ProtectedIdPurpose.Patient);
+                    var item = mapper.Map<PatientProgressNoteModel>(x.Note);
+                    item.Id = await protectionProvider.EncryptIntIdAsync(
+                        x.Note.Id,
+                        ProtectedIdPurpose.Patient);
+                    item.PatientInfoId = await protectionProvider.EncryptIntIdAsync(
+                        x.Note.PatientInfoId,
+                        ProtectedIdPurpose.Patient);
+                    item.PatientNumber = x.Patient.PatientNumber ?? string.Empty;
+                    item.PatientName = BuildPatientName(
+                        x.Patient.LastName,
+                        x.Patient.FirstName,
+                        x.Patient.MiddleName);
                     return item;
                 }));
 
@@ -61,6 +90,25 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
             {
                 await dbContext.DisposeAsync();
             }
+        }
+
+        private static string BuildPatientName(
+            string? lastName,
+            string? firstName,
+            string? middleName)
+        {
+            var givenNames = string.Join(" ", new[] { firstName, middleName }
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim()));
+
+            if (string.IsNullOrWhiteSpace(lastName))
+            {
+                return givenNames;
+            }
+
+            return string.IsNullOrWhiteSpace(givenNames)
+                ? lastName.Trim()
+                : $"{lastName.Trim()}, {givenNames}";
         }
     }
 }
