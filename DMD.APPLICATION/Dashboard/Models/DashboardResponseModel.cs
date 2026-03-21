@@ -8,6 +8,7 @@ namespace DMD.APPLICATION.Dashboard.Models
         public int PendingAppointments { get; set; }
         public double IncomeToday { get; set; }
         public double TotalIncomeMonthly { get; set; }
+        public double TotalExpenseMonthly { get; set; }
         public List<DashboardPatientItemModel> LatestPatients { get; set; } = new();
         public bool AddPatients { get; set; }
         public bool AddAppointment { get; set; }

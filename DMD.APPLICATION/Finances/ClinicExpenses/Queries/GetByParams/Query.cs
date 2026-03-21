@@ -15,6 +15,8 @@ namespace DMD.APPLICATION.Finances.ClinicExpenses.Queries.GetByParams
     public class Query : IRequest<Response>
     {
         public string? ClinicId { get; set; }
+        public DateTime? DateFrom { get; set; }
+        public DateTime? DateTo { get; set; }
     }
 
     public class QueryHandler : IRequestHandler<Query, Response>
@@ -52,9 +54,23 @@ namespace DMD.APPLICATION.Finances.ClinicExpenses.Queries.GetByParams
                     return new BadRequestResponse("Authenticated clinic was not found.");
                 }
 
-                var items = await dbContext.ClinicExpenses
+                var query = dbContext.ClinicExpenses
                     .AsNoTracking()
-                    .Where(x => x.ClinicProfileId == clinicId.Value)
+                    .Where(x => x.ClinicProfileId == clinicId.Value);
+
+                if (request.DateFrom.HasValue)
+                {
+                    var dateFrom = request.DateFrom.Value.Date;
+                    query = query.Where(x => x.Date >= dateFrom);
+                }
+
+                if (request.DateTo.HasValue)
+                {
+                    var dateToExclusive = request.DateTo.Value.Date.AddDays(1);
+                    query = query.Where(x => x.Date < dateToExclusive);
+                }
+
+                var items = await query
                     .OrderByDescending(x => x.Date)
                     .ThenByDescending(x => x.Id)
                     .ToListAsync(cancellationToken);

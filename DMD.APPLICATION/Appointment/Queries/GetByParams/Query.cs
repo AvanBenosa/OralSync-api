@@ -14,6 +14,8 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
     {
         public string ClinicId { get; set; } = string.Empty;
         public string Que { get; set; } = string.Empty;
+        public DateTime? DateFrom { get; set; }
+        public DateTime? DateTo { get; set; }
         public int PageStart { get; set; }
         public int PageEnd { get; set; }
     }
@@ -78,9 +80,23 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
 
                 var clinicPatientIds = patientLookup.Keys.ToList();
 
-                var appointments = await dbContext.AppointmentRequests
+                var appointmentsQuery = dbContext.AppointmentRequests
                     .AsNoTracking()
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PatientInfoId) && clinicPatientIds.Contains(x.PatientInfoId))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PatientInfoId) && clinicPatientIds.Contains(x.PatientInfoId));
+
+                if (request.DateFrom.HasValue)
+                {
+                    var dateFrom = request.DateFrom.Value.Date;
+                    appointmentsQuery = appointmentsQuery.Where(x => x.AppointmentDateFrom >= dateFrom);
+                }
+
+                if (request.DateTo.HasValue)
+                {
+                    var dateToExclusive = request.DateTo.Value.Date.AddDays(1);
+                    appointmentsQuery = appointmentsQuery.Where(x => x.AppointmentDateFrom < dateToExclusive);
+                }
+
+                var appointments = await appointmentsQuery
                     .OrderByDescending(x => x.AppointmentDateFrom)
                     .ToListAsync(cancellationToken);
 
@@ -120,6 +136,11 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                 }
 
                 var totalCount = appointmentRows.Count;
+                var hasDateFilter = request.DateFrom.HasValue || request.DateTo.HasValue;
+                var today = DateTime.Today;
+                var summaryCount = hasDateFilter
+                    ? totalCount
+                    : appointmentRows.Count(x => x.Appointment.AppointmentDateFrom.Date == today);
                 var pageStart = Math.Max(request.PageStart, 0);
                 var pageSize = request.PageEnd > 0 ? request.PageEnd : 25;
 
@@ -156,7 +177,9 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                     Items = items.ToList(),
                     PageStart = pageStart,
                     PageEnd = pageSize,
-                    TotalCount = totalCount
+                    TotalCount = totalCount,
+                    SummaryCount = summaryCount,
+                    HasDateFilter = hasDateFilter
                 };
 
                 return new SuccessResponse<AppointmentResponseModel>(response);

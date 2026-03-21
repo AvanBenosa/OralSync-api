@@ -5,8 +5,10 @@ using DMD.APPLICATION.Responses;
 using DMD.PERSISTENCE.Context;
 using DMD.SERVICES.ProtectionProvider;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.Annotations;
+using System.Security.Claims;
 
 namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParams
 {
@@ -15,6 +17,9 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
     {
         public string Id { get; set; } = string.Empty;
         public string PatientInfoId { get; set; } = string.Empty;
+        public string ClinicId { get; set; } = string.Empty;
+        public DateTime? DateFrom { get; set; }
+        public DateTime? DateTo { get; set; }
     }
 
     public class QueryHandler : IRequestHandler<Query, Response>
@@ -22,12 +27,18 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
         private readonly IMapper mapper;
         private readonly DmdDbContext dbContext;
         private readonly IProtectionProvider protectionProvider;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public QueryHandler(DmdDbContext dbContext, IMapper mapper, IProtectionProvider protectionProvider)
+        public QueryHandler(
+            DmdDbContext dbContext,
+            IMapper mapper,
+            IProtectionProvider protectionProvider,
+            IHttpContextAccessor httpContextAccessor)
         {
             this.mapper = mapper;
             this.dbContext = dbContext;
             this.protectionProvider = protectionProvider;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
@@ -40,6 +51,16 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
                     patientInfoId = await protectionProvider.DecryptIntIdAsync(
                         request.PatientInfoId,
                         ProtectedIdPurpose.Patient);
+                }
+
+                var clinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                    request.ClinicId,
+                    ProtectedIdPurpose.Clinic);
+
+                if (!clinicId.HasValue)
+                {
+                    var clinicIdValue = httpContextAccessor.HttpContext?.User.FindFirstValue("clinicId");
+                    clinicId = int.TryParse(clinicIdValue, out var currentClinicId) ? currentClinicId : null;
                 }
 
                 var itemsQuery =
@@ -55,6 +76,27 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
                 if (patientInfoId.HasValue)
                 {
                     itemsQuery = itemsQuery.Where(x => x.Note.PatientInfoId == patientInfoId.Value);
+                }
+
+                if (clinicId.HasValue)
+                {
+                    itemsQuery = itemsQuery.Where(x => x.Patient.ClinicProfileId == clinicId.Value);
+                }
+
+                if (request.DateFrom.HasValue)
+                {
+                    var dateFrom = request.DateFrom.Value.Date;
+                    itemsQuery = itemsQuery.Where(x =>
+                        x.Note.Date.HasValue &&
+                        x.Note.Date.Value >= dateFrom);
+                }
+
+                if (request.DateTo.HasValue)
+                {
+                    var dateToExclusive = request.DateTo.Value.Date.AddDays(1);
+                    itemsQuery = itemsQuery.Where(x =>
+                        x.Note.Date.HasValue &&
+                        x.Note.Date.Value < dateToExclusive);
                 }
 
                 var items = await itemsQuery

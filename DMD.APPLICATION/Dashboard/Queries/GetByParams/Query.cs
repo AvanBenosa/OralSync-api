@@ -65,6 +65,11 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                     .Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value < nextMonthStart)
                     .SumAsync(x => (double?)x.AmountPaid, cancellationToken) ?? 0;
 
+                var totalExpenseMonthly = await dbContext.ClinicExpenses
+                    .AsNoTracking()
+                    .Where(x => x.Date >= monthStart && x.Date < nextMonthStart)
+                    .SumAsync(x => (double?)x.Amount, cancellationToken) ?? 0;
+
                 var latestPatientItems = await dbContext.PatientInfos
                     .AsNoTracking()
                     .OrderByDescending(x => x.CreatedAt)
@@ -107,8 +112,20 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                     })
                     .ToListAsync(cancellationToken);
 
+                var monthlyExpenseRaw = await dbContext.ClinicExpenses
+                    .AsNoTracking()
+                    .Where(x => x.Date >= yearStart && x.Date < nextYearStart)
+                    .GroupBy(x => x.Date.Month)
+                    .Select(group => new
+                    {
+                        Month = group.Key,
+                        Expenses = group.Sum(x => x.Amount)
+                    })
+                    .ToListAsync(cancellationToken);
+
                 var monthlyIncome = BuildMonthlyIncomeSeries(
                     monthlyIncomeRaw.ToDictionary(x => x.Month, x => x.Income),
+                    monthlyExpenseRaw.ToDictionary(x => x.Month, x => x.Expenses),
                     today.Year);
 
                 var monthlyRevenue = await dbContext.PatientProgressNotes
@@ -132,6 +149,7 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                     PendingAppointments = pendingAppointments,
                     IncomeToday = incomeToday,
                     TotalIncomeMonthly = totalIncomeMonthly,
+                    TotalExpenseMonthly = totalExpenseMonthly,
                     LatestPatients = latestPatients,
                     AddPatients = true,
                     AddAppointment = true,
@@ -185,6 +203,7 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
 
         private static List<MonthlyIncomeModel> BuildMonthlyIncomeSeries(
             Dictionary<int, double> monthlyIncomeLookup,
+            Dictionary<int, double> monthlyExpenseLookup,
             int year)
         {
             var items = new List<MonthlyIncomeModel>();
@@ -195,7 +214,9 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                 {
                     Month = new DateTime(year, month, 1).ToString("MMM"),
                     Income = monthlyIncomeLookup.TryGetValue(month, out var income) ? income : 0,
-                    Expenses = 0
+                    Expenses = monthlyExpenseLookup.TryGetValue(month, out var expenses)
+                        ? expenses
+                        : 0
                 });
             }
 
