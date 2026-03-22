@@ -22,7 +22,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Models
 
         public string ClinicalFinding { get; set; }
         public string Assessment { get; set; }
-        public int ToothNumber { get; set; }
+        public int? ToothNumber { get; set; }
 
         //Treatment Plan
         public DateTime? NextVisit { get; set; }

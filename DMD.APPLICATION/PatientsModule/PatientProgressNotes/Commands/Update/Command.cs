@@ -22,7 +22,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Commands.Update
         public string Category { get; set; } = string.Empty;
         public string ClinicalFinding { get; set; } = string.Empty;
         public string Assessment { get; set; } = string.Empty;
-        public int ToothNumber { get; set; }
+        public int? ToothNumber { get; set; }
         public string Remarks { get; set; } = string.Empty;
         public double Balance { get; set; }
         public string Account { get; set; } = string.Empty;

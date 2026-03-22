@@ -101,7 +101,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
 
                 var items = await itemsQuery
                     .AsNoTracking()
-                    .OrderByDescending(x => x.Note.Date)
+                    .OrderBy(x => x.Note.Date)
                     .ThenByDescending(x => x.Note.Id)
                     .ToListAsync(cancellationToken);
 

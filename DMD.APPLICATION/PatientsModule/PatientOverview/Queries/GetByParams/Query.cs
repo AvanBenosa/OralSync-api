@@ -39,6 +39,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientOverview.Queries.GetByParams
 
                 var items = await dbContext.PatientProgressNotes.AsNoTracking()
                     .Where(x => x.PatientInfoId == patientInfoId)
+                    .OrderBy(x => x.Date)
                     .ToListAsync();
 
                 var response = await Task.WhenAll(items.Select(async x =>

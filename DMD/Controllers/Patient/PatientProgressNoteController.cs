@@ -8,6 +8,11 @@ using Commands = DMD.APPLICATION.PatientsModule.PatientProgressNotes.Commands;
 using Queries = DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries;
 namespace DMD.API.Controllers.Patient
 {
+    public class UploadPatientProgressNoteExcelRequest
+    {
+        public IFormFile? File { get; set; }
+    }
+
     [Route("api/dmd/patient-progress-note")]
     public class PatientProgressNoteController : BaseController
     {
@@ -34,6 +39,35 @@ namespace DMD.API.Controllers.Patient
                 return BadRequest(result.Message);
             var data = ((SuccessResponse<PatientProgressNoteModel>)result).Data;
             return Created("", data);
+        }
+
+        [HttpPost("upload-patient-progress-note-xlsx")]
+        [Description("Upload patient progress note xlsx file and import progress note records")]
+        [ProducesResponseType(typeof(PatientUploadResultModel), (int)HttpStatusCode.OK)]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(20_000_000)]
+        public async Task<IActionResult> UploadPatientProgressNoteXlsx([FromForm] UploadPatientProgressNoteExcelRequest request)
+        {
+            var file = request?.File;
+
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            await using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+
+            var command = new Commands.Upload.Command
+            {
+                FileName = file.FileName,
+                FileContent = memoryStream.ToArray(),
+            };
+
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+                return BadRequest(result.Message);
+
+            var data = ((SuccessResponse<PatientUploadResultModel>)result).Data;
+            return Ok(data);
         }
 
         [HttpPut("put-patient-progress-note")]
