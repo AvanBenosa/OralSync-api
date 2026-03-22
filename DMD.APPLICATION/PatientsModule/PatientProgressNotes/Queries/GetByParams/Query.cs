@@ -20,6 +20,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
         public string ClinicId { get; set; } = string.Empty;
         public DateTime? DateFrom { get; set; }
         public DateTime? DateTo { get; set; }
+        public string PaymentStatus { get; set; } = string.Empty;
     }
 
     public class QueryHandler : IRequestHandler<Query, Response>
@@ -97,6 +98,16 @@ namespace DMD.APPLICATION.PatientsModule.PatientProgressNotes.Queries.GetByParam
                     itemsQuery = itemsQuery.Where(x =>
                         x.Note.Date.HasValue &&
                         x.Note.Date.Value < dateToExclusive);
+                }
+
+                var normalizedPaymentStatus = request.PaymentStatus?.Trim().ToLowerInvariant();
+                if (normalizedPaymentStatus == "pending")
+                {
+                    itemsQuery = itemsQuery.Where(x => x.Note.Balance > 0);
+                }
+                else if (normalizedPaymentStatus == "paid")
+                {
+                    itemsQuery = itemsQuery.Where(x => x.Note.Balance <= 0);
                 }
 
                 var items = await itemsQuery

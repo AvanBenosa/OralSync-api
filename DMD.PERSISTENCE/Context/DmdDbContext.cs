@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
 using DMD.DOMAIN.Enums;
 using DMD.DOMAIN.Entities.Buildups;
+using DMD.DOMAIN.Entities.FInances;
 
 namespace DMD.PERSISTENCE.Context
 {
@@ -44,6 +45,18 @@ namespace DMD.PERSISTENCE.Context
                     ShouldBypassClinicFilter
                     || (CurrentClinicId.HasValue
                         && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
+
+            builder.Entity<DentalInventory>()
+            .HasQueryFilter(item =>
+                ShouldBypassClinicFilter
+                || (CurrentClinicId.HasValue
+                    && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
+
+            builder.Entity<ClinicExpenses>()
+            .HasQueryFilter(item =>
+                ShouldBypassClinicFilter
+                || (CurrentClinicId.HasValue
+                    && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
 
             builder.Entity<PatientOverview>()
                 .HasQueryFilter(item =>

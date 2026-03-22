@@ -13,6 +13,8 @@ namespace DMD.PERSISTENCE.Context
         public DbSet<UserProfile> UserProfiles { get;set; }
         public DbSet<ClinicProfile> ClinicProfiles { get; set; }
         public DbSet<ClinicExpenses> ClinicExpenses { get;set;  }
+
+        public DbSet<DentalInventory> DentalInventories { get;set;  }
         public DbSet<ClinicRegistrationVerification> ClinicRegistrationVerifications { get; set; }
         public DbSet<PublicAppointmentEmailVerification> PublicAppointmentEmailVerifications { get; set; }
 
