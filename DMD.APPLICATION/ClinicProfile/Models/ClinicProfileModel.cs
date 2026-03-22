@@ -21,6 +21,10 @@ namespace DMD.APPLICATION.ClinicProfiles.Models
         public bool IsFridayOpen { get; set; } = true;
         public bool IsSaturdayOpen { get; set; }
         public bool IsSundayOpen { get; set; }
-      
+        public string SubscriptionType { get; set; } = string.Empty;
+        public string ValidityDate { get; set; } = string.Empty;
+        public int PatientCount { get; set; }
+        public int UploadedFileCount { get; set; }
+        public int UserCount { get; set; }
     }
 }

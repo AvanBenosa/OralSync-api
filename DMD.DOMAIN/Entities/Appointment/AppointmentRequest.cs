@@ -6,7 +6,7 @@ namespace DMD.DOMAIN.Entities.Appointment
 {
     public class AppointmentRequest : BaseEntity<int>
     {
-        public string PatientInfoId { get;set;  }
+        public int PatientInfoId { get;set;  }
         public DateTime AppointmentDateFrom { get; set; }
         public DateTime AppointmentDateTo { get; set; }
         public DateTime? SmsReminderSentForDate { get; set; }

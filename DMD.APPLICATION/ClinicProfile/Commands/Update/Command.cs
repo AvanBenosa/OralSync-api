@@ -118,6 +118,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Update
                     IsFridayOpen = item.IsFridayOpen,
                     IsSaturdayOpen = item.IsSaturdayOpen,
                     IsSundayOpen = item.IsSundayOpen,
+                    SubscriptionType = item.Subsciption.ToString(),
+                    ValidityDate = item.ValidityDate.Year > 1 ? item.ValidityDate.ToString("O") : string.Empty,
                 });
             }
             catch (Exception error)

@@ -71,7 +71,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Create
 
                 var newItem = new AppointmentRequest
                 {
-                    PatientInfoId = patientId.ToString(),
+                    PatientInfoId = patientId,
                     AppointmentDateFrom = request.AppointmentDateFrom,
                     AppointmentDateTo = request.AppointmentDateTo,
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,

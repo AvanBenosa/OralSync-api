@@ -2,6 +2,7 @@ using DMD.APPLICATION.AdminPortal.Models;
 using DMD.APPLICATION.Auth;
 using DMD.APPLICATION.Common.ProtectedIds;
 using DMD.APPLICATION.Responses;
+using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
 using DMD.SERVICES.ProtectionProvider;
 using MediatR;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NJsonSchema.Annotations;
+using System.Globalization;
 using System.Security.Claims;
 
 namespace DMD.APPLICATION.AdminPortal.Commands.UpdateClinicLock
@@ -18,6 +20,8 @@ namespace DMD.APPLICATION.AdminPortal.Commands.UpdateClinicLock
     {
         public string ClinicId { get; set; } = string.Empty;
         public bool IsLocked { get; set; }
+        public string SubscriptionType { get; set; } = string.Empty;
+        public string ValidityDate { get; set; } = string.Empty;
     }
 
     public class CommandHandler : IRequestHandler<Command, Response>
@@ -76,6 +80,36 @@ namespace DMD.APPLICATION.AdminPortal.Commands.UpdateClinicLock
                     return new BadRequestResponse("Clinic was not found.");
                 }
 
+                if (!string.IsNullOrWhiteSpace(request.SubscriptionType))
+                {
+                    var normalizedSubscriptionType = request.SubscriptionType.Trim();
+                    if (string.Equals(normalizedSubscriptionType, "Premium", StringComparison.OrdinalIgnoreCase))
+                    {
+                        normalizedSubscriptionType = nameof(SubscriptionType.Premuim);
+                    }
+
+                    if (!Enum.TryParse(normalizedSubscriptionType, true, out SubscriptionType parsedSubscriptionType))
+                    {
+                        return new BadRequestResponse("Invalid subscription type.");
+                    }
+
+                    clinic.Subsciption = parsedSubscriptionType;
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.ValidityDate))
+                {
+                    if (!DateTime.TryParse(
+                        request.ValidityDate,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal,
+                        out var parsedValidityDate))
+                    {
+                        return new BadRequestResponse("Invalid validity date.");
+                    }
+
+                    clinic.ValidityDate = parsedValidityDate.Date;
+                }
+
                 clinic.IsLocked = request.IsLocked;
                 await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -99,6 +133,8 @@ namespace DMD.APPLICATION.AdminPortal.Commands.UpdateClinicLock
                     Address = clinic.Address,
                     EmailAddress = clinic.EmailAddress,
                     ContactNumber = clinic.ContactNumber,
+                    SubscriptionType = clinic.Subsciption.ToString(),
+                    ValidityDate = clinic.ValidityDate.ToString("O"),
                     IsLocked = clinic.IsLocked,
                     IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
                     CreatedAt = clinic.CreatedAt.ToString("O"),

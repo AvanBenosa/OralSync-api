@@ -122,7 +122,8 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
                     ClinicName = request.ClinicName.Trim(),
                     Address = request.ClinicAddress.Trim(),
                     EmailAddress = clinicEmail,
-                    ContactNumber = request.ClinicContactNumber.Trim()
+                    ContactNumber = request.ClinicContactNumber.Trim(),
+                    IsLocked = true
                 };
 
                 dbContext.ClinicProfiles.Add(clinic);
@@ -166,7 +167,11 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
                     configuration,
                     protectionProvider,
                     clinic.ClinicName,
-                    clinic.IsDataPrivacyAccepted);
+                    clinic.IsDataPrivacyAccepted,
+                    clinic.IsLocked,
+                    clinic.BannerImagePath,
+                    clinic.Subsciption.ToString(),
+                    clinic.ValidityDate.Year > 1 ? clinic.ValidityDate.ToString("O") : string.Empty);
                 response.RequiresRegistration = false;
 
                 return new SuccessResponse<RegisterAuthResponse>(response);

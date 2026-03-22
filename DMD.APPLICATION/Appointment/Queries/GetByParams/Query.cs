@@ -58,7 +58,7 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                     .ToListAsync(cancellationToken);
 
                 var patientLookup = patients.ToDictionary(
-                    x => x.Id.ToString(),
+                    x => x.Id,
                     x =>
                     {
                         var givenNames = string.Join(" ", new[] { x.FirstName, x.MiddleName }
@@ -82,7 +82,7 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
 
                 var appointmentsQuery = dbContext.AppointmentRequests
                     .AsNoTracking()
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PatientInfoId) && clinicPatientIds.Contains(x.PatientInfoId));
+                    .Where(x => clinicPatientIds.Contains(x.PatientInfoId));
 
                 if (request.DateFrom.HasValue)
                 {
@@ -101,15 +101,15 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
                     .ToListAsync(cancellationToken);
 
                 var appointmentRows = appointments
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PatientInfoId) && patientLookup.ContainsKey(x.PatientInfoId))
+                    .Where(x => patientLookup.ContainsKey(x.PatientInfoId))
                     .Select(x =>
                     {
-                        patientLookup.TryGetValue(x.PatientInfoId ?? string.Empty, out var patient);
+                        patientLookup.TryGetValue(x.PatientInfoId, out var patient);
 
                         return new
                         {
                             Appointment = x,
-                            PatientInfoId = x.PatientInfoId ?? string.Empty,
+                            PatientInfoId = x.PatientInfoId,
                             ReasonForVisit = x.ReasonForVisit ?? string.Empty,
                             Status = x.Status.ToString(),
                             Remarks = x.Remarks ?? string.Empty,
@@ -151,15 +151,11 @@ namespace DMD.APPLICATION.Appointment.Queries.GetByParams
 
                 var items = await Task.WhenAll(pagedRows.Select(async x =>
                 {
-                    var patientInfoId = int.TryParse(x.PatientInfoId, out var parsedPatientInfoId)
-                        ? parsedPatientInfoId
-                        : 0;
-
                     return new AppointmentModel
                     {
                         Id = await protectionProvider.EncryptIntIdAsync(x.Appointment.Id, ProtectedIdPurpose.Appointment),
-                        PatientInfoId = patientInfoId > 0
-                            ? await protectionProvider.EncryptIntIdAsync(patientInfoId, ProtectedIdPurpose.Patient)
+                        PatientInfoId = x.PatientInfoId > 0
+                            ? await protectionProvider.EncryptIntIdAsync(x.PatientInfoId, ProtectedIdPurpose.Patient)
                             : string.Empty,
                         AppointmentDateFrom = x.Appointment.AppointmentDateFrom,
                         AppointmentDateTo = x.Appointment.AppointmentDateTo,

@@ -83,11 +83,21 @@ namespace DMD.APPLICATION.Auth.Commands
                 var bannerImagePath = string.Empty;
                 var isDataPrivacyAccepted = false;
                 var isLocked = false;
+                var subscriptionType = string.Empty;
+                var validityDate = string.Empty;
                 if (user.ClinicId.HasValue)
                 {
                     var facility = await dbContext.ClinicProfiles.AsNoTracking()
                         .Where(x => x.Id == user.ClinicId)
-                        .Select(x => new { x.ClinicName, x.BannerImagePath, x.IsDataPrivacyAccepted, x.IsLocked })
+                        .Select(x => new
+                        {
+                            x.ClinicName,
+                            x.BannerImagePath,
+                            x.IsDataPrivacyAccepted,
+                            x.IsLocked,
+                            x.Subsciption,
+                            x.ValidityDate
+                        })
                         .FirstOrDefaultAsync();
 
                     if (facility != null)
@@ -96,6 +106,10 @@ namespace DMD.APPLICATION.Auth.Commands
                         bannerImagePath = facility.BannerImagePath;
                         isDataPrivacyAccepted = facility.IsDataPrivacyAccepted;
                         isLocked = facility.IsLocked;
+                        subscriptionType = facility.Subsciption.ToString();
+                        validityDate = facility.ValidityDate.Year > 1
+                            ? facility.ValidityDate.ToString("O")
+                            : string.Empty;
                     }
                 }
 
@@ -106,7 +120,9 @@ namespace DMD.APPLICATION.Auth.Commands
                     clinicName,
                     isDataPrivacyAccepted,
                     isLocked,
-                    bannerImagePath);
+                    bannerImagePath,
+                    subscriptionType,
+                    validityDate);
 
                 return new SuccessResponse<LoginAuthResponse>(authResponse);
             }

@@ -60,11 +60,7 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("LastUpdatedById")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PatientInfoId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("PatientInfoId1")
+                    b.Property<int>("PatientInfoId")
                         .HasColumnType("int");
 
                     b.Property<string>("ReasonForVisit")
@@ -83,7 +79,7 @@ namespace DMD.PERSISTENCE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientInfoId1");
+                    b.HasIndex("PatientInfoId");
 
                     b.ToTable("AppointmentRequests");
                 });
@@ -262,9 +258,11 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("MaximumStockLevel")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("MinimumStockLevel")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Name")
@@ -272,9 +270,11 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("QuantityOnHand")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("SellingPrice")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SupplierContactNumber")
@@ -290,12 +290,14 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalValue")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<decimal>("UnitCost")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("UnitOfMeasure")
@@ -1079,6 +1081,12 @@ namespace DMD.PERSISTENCE.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Subsciption")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ValidityDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.ToTable("ClinicProfiles");
@@ -1447,7 +1455,9 @@ namespace DMD.PERSISTENCE.Migrations
                 {
                     b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
                         .WithMany("AppointmentRequests")
-                        .HasForeignKey("PatientInfoId1");
+                        .HasForeignKey("PatientInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Buildups.FormTemplate", b =>

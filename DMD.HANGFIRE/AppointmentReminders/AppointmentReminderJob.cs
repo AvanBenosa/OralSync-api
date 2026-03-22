@@ -53,7 +53,7 @@ namespace DMD.HANGFIRE.AppointmentReminders
 
             var appointments = await (
                 from appointment in dbContext.AppointmentRequests
-                join patient in dbContext.PatientInfos on appointment.PatientInfoId equals patient.Id.ToString()
+                join patient in dbContext.PatientInfos on appointment.PatientInfoId equals patient.Id
                 join clinic in dbContext.ClinicProfiles on patient.ClinicProfileId equals clinic.Id
                 where appointment.Status == AppointmentStatus.Scheduled
                       && appointment.AppointmentDateFrom >= queryWindow.Start

@@ -40,7 +40,9 @@ namespace DMD.APPLICATION.Auth
             string? clinicName = null,
             bool isDataPrivacyAccepted = false,
             bool isLocked = false,
-            string? bannerImagePath = null)
+            string? bannerImagePath = null,
+            string? subscriptionType = null,
+            string? validityDate = null)
         {
             var portalType = IsBootstrapSeedUser(user, configuration) ? "admin" : "clinic";
 
@@ -63,6 +65,8 @@ namespace DMD.APPLICATION.Auth
                     RoleLabel = user.RoleLabel,
                     IsDataPrivacyAccepted = isDataPrivacyAccepted,
                     IsLocked = isLocked,
+                    SubscriptionType = subscriptionType?.Trim() ?? string.Empty,
+                    ValidityDate = validityDate?.Trim() ?? string.Empty,
                     ContactNumber = user.ContactNumber,
                     CreatedAt = DateTime.UtcNow.ToString("O"),
                     PortalType = portalType,

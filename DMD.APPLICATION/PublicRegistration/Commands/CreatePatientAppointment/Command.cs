@@ -99,7 +99,7 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
                 var hasConflict = await (
                     from appointment in dbContext.AppointmentRequests.AsNoTracking()
                     join patientInfo in dbContext.PatientInfos.AsNoTracking()
-                        on appointment.PatientInfoId equals patientInfo.Id.ToString()
+                        on appointment.PatientInfoId equals patientInfo.Id
                     where patientInfo.ClinicProfileId == clinicId.Value
                           && appointment.Status != AppointmentStatus.Cancelled
                           && appointment.AppointmentDateFrom < request.AppointmentDateTo
@@ -178,7 +178,7 @@ namespace DMD.APPLICATION.PublicRegistration.Commands.CreatePatientAppointment
 
                 var newAppointment = new AppointmentRequest
                 {
-                    PatientInfoId = patient.Id.ToString(),
+                    PatientInfoId = patient.Id,
                     AppointmentDateFrom = request.AppointmentDateFrom,
                     AppointmentDateTo = request.AppointmentDateTo,
                     ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty,

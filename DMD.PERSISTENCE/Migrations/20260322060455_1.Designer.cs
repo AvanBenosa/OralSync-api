@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    [Migration("20260321102536_2")]
-    partial class _2
+    [Migration("20260322060455_1")]
+    partial class _1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,11 +63,7 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("LastUpdatedById")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PatientInfoId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("PatientInfoId1")
+                    b.Property<int>("PatientInfoId")
                         .HasColumnType("int");
 
                     b.Property<string>("ReasonForVisit")
@@ -86,7 +82,7 @@ namespace DMD.PERSISTENCE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientInfoId1");
+                    b.HasIndex("PatientInfoId");
 
                     b.ToTable("AppointmentRequests");
                 });
@@ -194,6 +190,131 @@ namespace DMD.PERSISTENCE.Migrations
                     b.HasIndex("ClinicProfileId");
 
                     b.ToTable("ClinicExpenses");
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.FInances.DentalInventory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BatchNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClinicProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ExpirationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsExpired")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsLowStock")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastRestockedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastUpdatedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastUsedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ManufacturingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("MaximumStockLevel")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinimumStockLevel")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("QuantityOnHand")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SellingPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SupplierContactNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SupplierEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicProfileId");
+
+                    b.ToTable("DentalInventories");
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Patients.PatientEmergencyContact", b =>
@@ -570,6 +691,10 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<double>("AmountPaid")
                         .HasColumnType("float");
 
+                    b.Property<string>("Assessment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AssignedDoctor")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -578,6 +703,10 @@ namespace DMD.PERSISTENCE.Migrations
                         .HasColumnType("float");
 
                     b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClinicalFinding")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -608,6 +737,9 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("LastUpdatedById")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("NextVisit")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PatientInfoId")
                         .HasColumnType("int");
 
@@ -618,6 +750,9 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("Remarks")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ToothNumber")
+                        .HasColumnType("int");
 
                     b.Property<double>("TotalAmountDue")
                         .HasColumnType("float");
@@ -948,6 +1083,12 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<string>("OpeningTime")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Subsciption")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ValidityDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -1317,7 +1458,9 @@ namespace DMD.PERSISTENCE.Migrations
                 {
                     b.HasOne("DMD.DOMAIN.Entities.Patients.PatientInfo", null)
                         .WithMany("AppointmentRequests")
-                        .HasForeignKey("PatientInfoId1");
+                        .HasForeignKey("PatientInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DMD.DOMAIN.Entities.Buildups.FormTemplate", b =>
@@ -1333,6 +1476,15 @@ namespace DMD.PERSISTENCE.Migrations
                 {
                     b.HasOne("DMD.DOMAIN.Entities.UserProfile.ClinicProfile", null)
                         .WithMany("Expenses")
+                        .HasForeignKey("ClinicProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DMD.DOMAIN.Entities.FInances.DentalInventory", b =>
+                {
+                    b.HasOne("DMD.DOMAIN.Entities.UserProfile.ClinicProfile", null)
+                        .WithMany("Inventories")
                         .HasForeignKey("ClinicProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1503,6 +1655,8 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Navigation("Expenses");
 
                     b.Navigation("FormTemplates");
+
+                    b.Navigation("Inventories");
 
                     b.Navigation("Patients");
                 });

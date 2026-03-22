@@ -1,6 +1,7 @@
 using DMD.DOMAIN.Entities.Buildups;
 using DMD.DOMAIN.Entities.FInances;
 using DMD.DOMAIN.Entities.Patients;
+using DMD.DOMAIN.Enums;
 
 namespace DMD.DOMAIN.Entities.UserProfile
 {
@@ -24,6 +25,9 @@ namespace DMD.DOMAIN.Entities.UserProfile
         public bool IsFridayOpen { get; set; } = true;
         public bool IsSaturdayOpen { get; set; }
         public bool IsSundayOpen { get; set; }
+
+        public DateTime ValidityDate { get; set; }
+        public SubscriptionType Subsciption { get; set; }
         public List<PatientInfo> Patients { get; set; } = new();
 
         public List<ClinicExpenses>Expenses { get; set; } = new();

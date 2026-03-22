@@ -92,7 +92,9 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Create
                     Address = item.Address,
                     EmailAddress = item.EmailAddress,
                     ContactNumber = item.ContactNumber,
-                    IsDataPrivacyAccepted = item.IsDataPrivacyAccepted
+                    IsDataPrivacyAccepted = item.IsDataPrivacyAccepted,
+                    SubscriptionType = item.Subsciption.ToString(),
+                    ValidityDate = item.ValidityDate.Year > 1 ? item.ValidityDate.ToString("O") : string.Empty
                 });
             }
             catch (Exception error)

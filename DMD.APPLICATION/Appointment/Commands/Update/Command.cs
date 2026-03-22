@@ -75,7 +75,7 @@ namespace DMD.APPLICATION.Appointment.Commands.Update
                     item.AppointmentDateFrom.Date != request.AppointmentDateFrom.Date
                     || item.Status != status;
 
-                item.PatientInfoId = patientId.ToString();
+                item.PatientInfoId = patientId;
                 item.AppointmentDateFrom = request.AppointmentDateFrom;
                 item.AppointmentDateTo = request.AppointmentDateTo;
                 item.ReasonForVisit = request.ReasonForVisit?.Trim() ?? string.Empty;

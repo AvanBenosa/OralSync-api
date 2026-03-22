@@ -83,6 +83,8 @@
         public string RoleLabel { get; set; } = string.Empty;
         public bool IsDataPrivacyAccepted { get; set; }
         public bool IsLocked { get; set; }
+        public string SubscriptionType { get; set; } = string.Empty;
+        public string ValidityDate { get; set; } = string.Empty;
         public string? Avatar { get; set; }
         public string? ContactNumber { get; set; }
         public string CreatedAt { get; set; } = string.Empty;

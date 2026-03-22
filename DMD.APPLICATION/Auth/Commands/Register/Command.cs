@@ -185,7 +185,11 @@ namespace DMD.APPLICATION.Auth.Commands.Register
                     configuration,
                     protectionProvider,
                     clinic.ClinicName,
-                    clinic.IsDataPrivacyAccepted);
+                    clinic.IsDataPrivacyAccepted,
+                    clinic.IsLocked,
+                    clinic.BannerImagePath,
+                    clinic.Subsciption.ToString(),
+                    clinic.ValidityDate.Year > 1 ? clinic.ValidityDate.ToString("O") : string.Empty);
                 response.RequiresRegistration = false;
 
                 return new SuccessResponse<RegisterAuthResponse>(response);

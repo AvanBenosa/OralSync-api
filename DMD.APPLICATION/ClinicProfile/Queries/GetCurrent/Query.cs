@@ -61,6 +61,38 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetCurrent
                     return new BadRequestResponse("Clinic profile was not found.");
                 }
 
+                var patientCount = await dbContext.PatientInfos
+                    .AsNoTracking()
+                    .CountAsync(x => x.ClinicProfileId == clinicId.Value, cancellationToken);
+
+                var userCount = await dbContext.UserProfiles
+                    .AsNoTracking()
+                    .CountAsync(x => x.ClinicId == clinicId.Value, cancellationToken);
+
+                var profilePictureCount = await dbContext.PatientInfos
+                    .AsNoTracking()
+                    .CountAsync(
+                        x => x.ClinicProfileId == clinicId.Value && !string.IsNullOrEmpty(x.ProfilePicture),
+                        cancellationToken);
+
+                var patientUploadCount = await (
+                    from upload in dbContext.PatientUploads.AsNoTracking()
+                    join patient in dbContext.PatientInfos.AsNoTracking()
+                        on upload.PatientInfoId equals patient.Id
+                    where patient.ClinicProfileId == clinicId.Value
+                    select upload.Id
+                ).CountAsync(cancellationToken);
+
+                var dentalPhotoCount = await (
+                    from image in dbContext.PatientTeethImages.AsNoTracking()
+                    join teeth in dbContext.PatientTeeth.AsNoTracking()
+                        on image.PatientTeethId equals teeth.Id
+                    join patient in dbContext.PatientInfos.AsNoTracking()
+                        on teeth.PatientInfoId equals patient.Id
+                    where patient.ClinicProfileId == clinicId.Value
+                    select image.Id
+                ).CountAsync(cancellationToken);
+
                 var item = new ClinicProfileModel
                     {
                         Id = await protectionProvider.EncryptIntIdAsync(clinic.Id, ProtectedIdPurpose.Clinic),
@@ -82,6 +114,11 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetCurrent
                         IsFridayOpen = clinic.IsFridayOpen,
                         IsSaturdayOpen = clinic.IsSaturdayOpen,
                         IsSundayOpen = clinic.IsSundayOpen,
+                        SubscriptionType = clinic.Subsciption.ToString(),
+                        ValidityDate = clinic.ValidityDate.Year > 1 ? clinic.ValidityDate.ToString("O") : string.Empty,
+                        PatientCount = patientCount,
+                        UploadedFileCount = profilePictureCount + patientUploadCount + dentalPhotoCount,
+                        UserCount = userCount,
                     };
 
                 return new SuccessResponse<ClinicProfileModel>(item);

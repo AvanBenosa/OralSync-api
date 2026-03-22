@@ -1,15 +1,16 @@
 using DMD.DOMAIN.Entities.Appointment;
+using DMD.DOMAIN.Entities.Buildups;
+using DMD.DOMAIN.Entities.FInances;
 using DMD.DOMAIN.Entities.Patients;
 using DMD.DOMAIN.Entities.UserProfile;
+using DMD.DOMAIN.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Reflection.Emit;
 using System.Security.Claims;
-using DMD.DOMAIN.Enums;
-using DMD.DOMAIN.Entities.Buildups;
-using DMD.DOMAIN.Entities.FInances;
 
 namespace DMD.PERSISTENCE.Context
 {
@@ -51,6 +52,19 @@ namespace DMD.PERSISTENCE.Context
                 ShouldBypassClinicFilter
                 || (CurrentClinicId.HasValue
                     && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
+
+            builder.Entity<DentalInventory>(entity =>
+            {
+                // STOCK (can have fractions like ml, grams)
+                entity.Property(x => x.QuantityOnHand).HasPrecision(18, 2);
+                entity.Property(x => x.MinimumStockLevel).HasPrecision(18, 2);
+                entity.Property(x => x.MaximumStockLevel).HasPrecision(18, 2);
+
+                // COSTING (money values)
+                entity.Property(x => x.UnitCost).HasPrecision(18, 2);
+                entity.Property(x => x.SellingPrice).HasPrecision(18, 2);
+                entity.Property(x => x.TotalValue).HasPrecision(18, 2);
+            });
 
             builder.Entity<ClinicExpenses>()
             .HasQueryFilter(item =>
@@ -116,7 +130,7 @@ namespace DMD.PERSISTENCE.Context
             builder.Entity<AppointmentRequest>()
                 .HasQueryFilter(item =>
                     ShouldBypassClinicFilter || (CurrentClinicId.HasValue
-                        && PatientInfos.Any(patient => patient.Id.ToString() == item.PatientInfoId)));
+                        && PatientInfos.Any(patient => patient.Id == item.PatientInfoId)));
         }
 
         private bool ShouldBypassClinicFilter =>

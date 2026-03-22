@@ -7,6 +7,8 @@ namespace DMD.APPLICATION.AdminPortal.Models
         public string Address { get; set; } = string.Empty;
         public string EmailAddress { get; set; } = string.Empty;
         public string ContactNumber { get; set; } = string.Empty;
+        public string SubscriptionType { get; set; } = string.Empty;
+        public string ValidityDate { get; set; } = string.Empty;
         public bool IsLocked { get; set; }
         public bool IsDataPrivacyAccepted { get; set; }
         public string CreatedAt { get; set; } = string.Empty;
