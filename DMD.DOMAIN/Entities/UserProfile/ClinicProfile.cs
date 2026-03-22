@@ -33,5 +33,6 @@ namespace DMD.DOMAIN.Entities.UserProfile
         public List<ClinicExpenses>Expenses { get; set; } = new();
         public List<FormTemplate>FormTemplates { get; set; } = new();
         public List<DentalInventory>Inventories { get; set; } = new();
+        public List<ClinicSubsciptionHistory> SubsciptionHistories { get; set; } = new();
     }
 }

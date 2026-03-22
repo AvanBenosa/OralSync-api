@@ -9,5 +9,6 @@ namespace DMD.APPLICATION.Common.ProtectedIds
         public const string FormTemplate = "form-template-id";
         public const string ClinicExpense = "clinic-expense-id";
         public const string DentalInventory = "dental-inventory-id";
+        public const string ClinicSubscriptionHistory = "clinic-subscription-history-id";
     }
 }

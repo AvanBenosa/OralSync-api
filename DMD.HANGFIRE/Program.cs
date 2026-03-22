@@ -1,4 +1,6 @@
 using DMD.HANGFIRE.AppointmentReminders;
+using DMD.HANGFIRE.ClinicAutoLocks;
+using DMD.HANGFIRE.Common;
 using DMD.PERSISTENCE.Context;
 using DMD.SERVICES.Email;
 using DMD.SERVICES.Sms;
@@ -28,7 +30,15 @@ builder.Services
         static settings => !settings.IsEnabled || !string.IsNullOrWhiteSpace(settings.EveningCronExpression),
         "AppointmentReminderSettings:EveningCronExpression is required when appointment reminders are enabled.")
     .ValidateOnStart();
+builder.Services
+    .AddOptions<ClinicAutoLockSettings>()
+    .Bind(builder.Configuration.GetSection(ClinicAutoLockSettings.SectionName))
+    .Validate(
+        static settings => !settings.IsEnabled || !string.IsNullOrWhiteSpace(settings.CronExpression),
+        "ClinicAutoLockSettings:CronExpression is required when clinic auto-lock is enabled.")
+    .ValidateOnStart();
 builder.Services.AddScoped<IAppointmentReminderJob, AppointmentReminderJob>();
+builder.Services.AddScoped<IClinicAutoLockJob, ClinicAutoLockJob>();
 
 builder.Services.AddHangfire((serviceProvider, configuration) =>
 {
@@ -55,14 +65,20 @@ using (var scope = app.Services.CreateScope())
     var reminderSettings = scope.ServiceProvider
         .GetRequiredService<IOptions<AppointmentReminderSettings>>()
         .Value;
+    var clinicAutoLockSettings = scope.ServiceProvider
+        .GetRequiredService<IOptions<ClinicAutoLockSettings>>()
+        .Value;
 
     const string legacyAppointmentReminderJobId = "patient-appointment-sms-reminders";
     const string eveningAppointmentReminderJobId = "patient-appointment-sms-reminders-evening-before";
     const string morningAppointmentReminderJobId = "patient-appointment-sms-reminders-morning-of";
+    const string clinicAutoLockJobId = "clinic-profile-auto-lock-expired-validity";
 
     if (reminderSettings.IsEnabled)
     {
-        var timeZone = AppointmentReminderTimeZoneResolver.Resolve(reminderSettings.TimeZoneId);
+        var timeZone = HangfireTimeZoneResolver.Resolve(
+            reminderSettings.TimeZoneId,
+            AppointmentReminderSettings.SectionName);
 
         recurringJobManager.RemoveIfExists(legacyAppointmentReminderJobId);
         recurringJobManager.AddOrUpdate<IAppointmentReminderJob>(
@@ -98,6 +114,34 @@ using (var scope = app.Services.CreateScope())
         recurringJobManager.RemoveIfExists(morningAppointmentReminderJobId);
         app.Logger.LogInformation(
             "Appointment reminder jobs are disabled and have been removed if they existed.");
+    }
+
+    if (clinicAutoLockSettings.IsEnabled)
+    {
+        var clinicAutoLockTimeZone = HangfireTimeZoneResolver.Resolve(
+            clinicAutoLockSettings.TimeZoneId,
+            ClinicAutoLockSettings.SectionName);
+
+        recurringJobManager.AddOrUpdate<IClinicAutoLockJob>(
+            clinicAutoLockJobId,
+            job => job.AutoLockExpiredClinicsAsync(CancellationToken.None),
+            clinicAutoLockSettings.CronExpression,
+            new RecurringJobOptions
+            {
+                TimeZone = clinicAutoLockTimeZone
+            });
+
+        app.Logger.LogInformation(
+            "Registered recurring clinic auto-lock job '{JobId}' with cron '{CronExpression}' in timezone '{TimeZoneId}'.",
+            clinicAutoLockJobId,
+            clinicAutoLockSettings.CronExpression,
+            clinicAutoLockTimeZone.Id);
+    }
+    else
+    {
+        recurringJobManager.RemoveIfExists(clinicAutoLockJobId);
+        app.Logger.LogInformation(
+            "Clinic auto-lock job is disabled and has been removed if it existed.");
     }
 }
 

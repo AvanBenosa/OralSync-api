@@ -1,17 +1,19 @@
-namespace DMD.HANGFIRE.AppointmentReminders
+namespace DMD.HANGFIRE.Common
 {
-    internal static class AppointmentReminderTimeZoneResolver
+    internal static class HangfireTimeZoneResolver
     {
-        private static readonly Dictionary<string, string[]> timeZoneAliases =
+        private static readonly Dictionary<string, string[]> TimeZoneAliases =
             new(StringComparer.OrdinalIgnoreCase)
             {
                 ["Asia/Manila"] = new[] { "Asia/Manila", "Singapore Standard Time" },
                 ["Singapore Standard Time"] = new[] { "Singapore Standard Time", "Asia/Manila" }
             };
 
-        public static TimeZoneInfo Resolve(string configuredTimeZoneId)
+        public static TimeZoneInfo Resolve(string configuredTimeZoneId, string settingName)
         {
-            var candidates = timeZoneAliases.TryGetValue(configuredTimeZoneId ?? string.Empty, out var aliases)
+            var candidates = TimeZoneAliases.TryGetValue(
+                configuredTimeZoneId ?? string.Empty,
+                out var aliases)
                 ? aliases
                 : new[] { configuredTimeZoneId ?? string.Empty };
 
@@ -30,7 +32,7 @@ namespace DMD.HANGFIRE.AppointmentReminders
             }
 
             throw new InvalidOperationException(
-                $"AppointmentReminderSettings:TimeZoneId '{configuredTimeZoneId}' could not be resolved.");
+                $"{settingName}:TimeZoneId '{configuredTimeZoneId}' could not be resolved.");
         }
     }
 }

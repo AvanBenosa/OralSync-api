@@ -7,21 +7,33 @@ namespace DMD.PERSISTENCE.Context
     {
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userEmail = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
+            var user = _httpContextAccessor?.HttpContext?.User;
+            var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = user?.FindFirst(ClaimTypes.Email)?.Value;
+
+            const string systemActorId = "system";
+            const string systemActorName = "system";
 
             // Handle newly added entities
             foreach (var entry in ChangeTracker.Entries().Where(x => x.State == EntityState.Added))
             {
                 if (entry.Entity is BaseEntity<int> intEntity)
                 {
-                    intEntity.CreatedById = !string.IsNullOrEmpty(intEntity.CreatedById) ? intEntity.CreatedById : userId ?? null;
-                    intEntity.CreatedBy = !string.IsNullOrEmpty(intEntity.CreatedBy) ? intEntity.CreatedBy : userEmail ?? null;
+                    intEntity.CreatedById = !string.IsNullOrEmpty(intEntity.CreatedById)
+                        ? intEntity.CreatedById
+                        : userId ?? systemActorId;
+                    intEntity.CreatedBy = !string.IsNullOrEmpty(intEntity.CreatedBy)
+                        ? intEntity.CreatedBy
+                        : userEmail ?? systemActorName;
                 }
                 else if (entry.Entity is BaseEntity<long> longEntity)
                 {
-                    longEntity.CreatedById = !string.IsNullOrEmpty(longEntity.CreatedById) ? longEntity.CreatedById : userId ?? null;
-                    longEntity.CreatedBy = !string.IsNullOrEmpty(longEntity.CreatedBy) ? longEntity.CreatedBy : userEmail ?? null;
+                    longEntity.CreatedById = !string.IsNullOrEmpty(longEntity.CreatedById)
+                        ? longEntity.CreatedById
+                        : userId ?? systemActorId;
+                    longEntity.CreatedBy = !string.IsNullOrEmpty(longEntity.CreatedBy)
+                        ? longEntity.CreatedBy
+                        : userEmail ?? systemActorName;
                 }
             }
 
@@ -31,15 +43,15 @@ namespace DMD.PERSISTENCE.Context
                 if (entry.Entity is BaseEntity<int> intEntity)
                 {
                     intEntity.LastUpdatedAt = DateTime.UtcNow;
-                    intEntity.LastUpdatedById = !string.IsNullOrEmpty(userId) ? userId : "n/a";
-                    intEntity.LastUpdatedBy = !string.IsNullOrEmpty(userEmail) ? userEmail : "n/a";
+                    intEntity.LastUpdatedById = !string.IsNullOrEmpty(userId) ? userId : systemActorId;
+                    intEntity.LastUpdatedBy = !string.IsNullOrEmpty(userEmail) ? userEmail : systemActorName;
 
                 }
                 else if (entry.Entity is BaseEntity<long> longEntity)
                 {
                     longEntity.LastUpdatedAt = DateTime.UtcNow;
-                    longEntity.LastUpdatedById = !string.IsNullOrEmpty(userId) ? userId : "n/a";
-                    longEntity.LastUpdatedBy = !string.IsNullOrEmpty(userEmail) ? userEmail : "n/a";
+                    longEntity.LastUpdatedById = !string.IsNullOrEmpty(userId) ? userId : systemActorId;
+                    longEntity.LastUpdatedBy = !string.IsNullOrEmpty(userEmail) ? userEmail : systemActorName;
                 }
             }
 

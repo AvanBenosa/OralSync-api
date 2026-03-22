@@ -66,6 +66,12 @@ namespace DMD.PERSISTENCE.Context
                 entity.Property(x => x.TotalValue).HasPrecision(18, 2);
             });
 
+            builder.Entity<ClinicSubsciptionHistory>()
+            .HasQueryFilter(item =>
+                ShouldBypassClinicFilter
+                || (CurrentClinicId.HasValue
+                    && item.ClinicProfileId == CurrentClinicId.GetValueOrDefault()));
+
             builder.Entity<ClinicExpenses>()
             .HasQueryFilter(item =>
                 ShouldBypassClinicFilter

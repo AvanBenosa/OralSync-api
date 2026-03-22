@@ -1,4 +1,5 @@
 using DMD.DOMAIN.Enums.Appointment;
+using DMD.HANGFIRE.Common;
 using DMD.PERSISTENCE.Context;
 using DMD.SERVICES.Sms;
 using DMD.SERVICES.Sms.Models;
@@ -47,7 +48,9 @@ namespace DMD.HANGFIRE.AppointmentReminders
                 return;
             }
 
-            var timeZone = AppointmentReminderTimeZoneResolver.Resolve(settings.TimeZoneId);
+            var timeZone = HangfireTimeZoneResolver.Resolve(
+                settings.TimeZoneId,
+                AppointmentReminderSettings.SectionName);
             var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
             var queryWindow = BuildQueryWindow(schedule, localNow);
 

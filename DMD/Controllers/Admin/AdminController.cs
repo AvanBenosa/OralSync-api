@@ -58,5 +58,65 @@ namespace DMD.API.Controllers.Admin
             var data = ((SuccessResponse<AdminClinicModel>)result).Data;
             return Ok(data);
         }
+
+        [HttpGet("get-clinic-subscription-histories")]
+        [Description("Get clinic subscription history records")]
+        [ProducesResponseType(typeof(List<AdminClinicSubscriptionHistoryModel>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetClinicSubscriptionHistories([FromQuery] AdminQueries.GetClinicSubscriptionHistories.Query query)
+        {
+            var result = await Mediator.Send(query);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<List<AdminClinicSubscriptionHistoryModel>>)result).Data;
+            return Ok(data);
+        }
+
+        [HttpPost("create-clinic-subscription-history")]
+        [Description("Create clinic subscription history record")]
+        [ProducesResponseType(typeof(AdminClinicSubscriptionHistoryModel), (int)HttpStatusCode.Created)]
+        public async Task<IActionResult> CreateClinicSubscriptionHistory([FromBody] AdminCommands.CreateClinicSubscriptionHistory.Command command)
+        {
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<AdminClinicSubscriptionHistoryModel>)result).Data;
+            return Created(string.Empty, data);
+        }
+
+        [HttpPut("put-clinic-subscription-history")]
+        [Description("Update clinic subscription history record")]
+        [ProducesResponseType(typeof(AdminClinicSubscriptionHistoryModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateClinicSubscriptionHistory([FromBody] AdminCommands.UpdateClinicSubscriptionHistory.Command command)
+        {
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<AdminClinicSubscriptionHistoryModel>)result).Data;
+            return Ok(data);
+        }
+
+        [HttpDelete("delete-clinic-subscription-history")]
+        [Description("Delete clinic subscription history record")]
+        [ProducesResponseType(typeof(bool), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteClinicSubscriptionHistory([FromBody] AdminCommands.DeleteClinicSubscriptionHistory.Command command)
+        {
+            var result = await Mediator.Send(command);
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<bool>)result).Data;
+            return Ok(data);
+        }
     }
 }

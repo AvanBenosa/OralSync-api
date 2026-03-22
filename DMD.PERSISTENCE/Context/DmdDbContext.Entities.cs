@@ -13,29 +13,20 @@ namespace DMD.PERSISTENCE.Context
         public DbSet<UserProfile> UserProfiles { get;set; }
         public DbSet<ClinicProfile> ClinicProfiles { get; set; }
         public DbSet<ClinicExpenses> ClinicExpenses { get;set;  }
-
         public DbSet<DentalInventory> DentalInventories { get;set;  }
+        public DbSet<ClinicSubsciptionHistory> SubsciptionHistories { get; set; }
         public DbSet<ClinicRegistrationVerification> ClinicRegistrationVerifications { get; set; }
         public DbSet<PublicAppointmentEmailVerification> PublicAppointmentEmailVerifications { get; set; }
-
         public DbSet<PatientInfo> PatientInfos { get;set;  }
-
         public DbSet<PatientOverview> PatientOverviews { get;set; } //TODO DELETE IF NOT NEEDED
-
         public DbSet<PatientProgressNote> PatientProgressNotes { get; set; }
-
         public DbSet<PatientMedicalHistory> PatientMedicalHistories { get;set;  }
-
         public DbSet<PatientEmergencyContact> PatientEmergencyContacts { get; set; }    
-
         public DbSet<PatientUploads>PatientUploads { get; set; }
-
         public DbSet<PatientForm> PatientForms { get; set; }
-
         public DbSet<PatientTeeth> PatientTeeth { get; set; }
         public DbSet<PatientTeethSurface> PatientTeethSurface { get; set; }
         public DbSet<PatientTeethImage> PatientTeethImages { get; set; }
-
         public DbSet<AppointmentRequest> AppointmentRequests { get; set; }
         public DbSet<FormTemplate> FormTemplates { get; set; }
     }
