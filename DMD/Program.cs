@@ -62,12 +62,12 @@ var storageRoot = string.IsNullOrWhiteSpace(configuredStorageRoot)
 
 Directory.CreateDirectory(storageRoot);
 
-app.UseStaticFiles();
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(legacyUploadsRoot),
-    RequestPath = "/uploads"
-});
+//app.UseStaticFiles();
+//app.UseStaticFiles(new StaticFileOptions
+//{
+//    FileProvider = new PhysicalFileProvider(legacyUploadsRoot),
+//    RequestPath = "/uploads"
+//});
 
 app.Use(async (context, next) =>
 {
