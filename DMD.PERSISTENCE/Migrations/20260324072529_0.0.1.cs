@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DMD.PERSISTENCE.Migrations
 {
     /// <inheritdoc />
-    public partial class _1 : Migration
+    public partial class _001 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -78,6 +78,8 @@ namespace DMD.PERSISTENCE.Migrations
                     EmailAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDataPrivacyAccepted = table.Column<bool>(type: "bit", nullable: false),
+                    IsContractPolicyAccepted = table.Column<bool>(type: "bit", nullable: false),
+                    ForBetaTestingAccepted = table.Column<bool>(type: "bit", nullable: false),
                     IsLocked = table.Column<bool>(type: "bit", nullable: false),
                     OpeningTime = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ClosingTime = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -408,6 +410,7 @@ namespace DMD.PERSISTENCE.Migrations
                     BirthDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Suffix = table.Column<int>(type: "int", nullable: false),
                     Occupation = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Religion = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -428,6 +431,35 @@ namespace DMD.PERSISTENCE.Migrations
                     table.PrimaryKey("PK_PatientInfos", x => x.Id);
                     table.ForeignKey(
                         name: "FK_PatientInfos_ClinicProfiles_ClinicProfileId",
+                        column: x => x.ClinicProfileId,
+                        principalTable: "ClinicProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SubsciptionHistories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ClinicProfileId = table.Column<int>(type: "int", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Subsciption = table.Column<int>(type: "int", nullable: false),
+                    TotalAmount = table.Column<double>(type: "float", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastUpdatedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastUpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubsciptionHistories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SubsciptionHistories_ClinicProfiles_ClinicProfileId",
                         column: x => x.ClinicProfileId,
                         principalTable: "ClinicProfiles",
                         principalColumn: "Id",
@@ -842,6 +874,11 @@ namespace DMD.PERSISTENCE.Migrations
                 name: "IX_PatientUploads_PatientInfoId",
                 table: "PatientUploads",
                 column: "PatientInfoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubsciptionHistories_ClinicProfileId",
+                table: "SubsciptionHistories",
+                column: "ClinicProfileId");
         }
 
         /// <inheritdoc />
@@ -903,6 +940,9 @@ namespace DMD.PERSISTENCE.Migrations
 
             migrationBuilder.DropTable(
                 name: "PublicAppointmentEmailVerifications");
+
+            migrationBuilder.DropTable(
+                name: "SubsciptionHistories");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

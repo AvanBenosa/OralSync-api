@@ -58,8 +58,8 @@ namespace DMD.API.Configurations
             ILogger logger)
         {
             // Seed admin user
-            var adminEmail = configuration["Seed:Admin:Email"] ?? "admin@email.com";
-            var adminPassword = configuration["Seed:Admin:Password"] ?? "abcdE@123";
+            var adminEmail = configuration["Seed:Admin:Email"] ?? "adminAvan";
+            var adminPassword = configuration["Seed:Admin:Password"] ?? "Xdrx3991*?";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
             adminUser ??= await userManager.FindByNameAsync(adminEmail);
 
