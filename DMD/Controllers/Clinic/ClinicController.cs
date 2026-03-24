@@ -12,6 +12,7 @@ using DMD.API.Storage;
 using ClinicCommands = DMD.APPLICATION.ClinicProfiles.Commands;
 using ClinicModels = DMD.APPLICATION.ClinicProfiles.Models;
 using ClinicQueries = DMD.APPLICATION.ClinicProfiles.Queries;
+using ClinicContract = DMD.APPLICATION.ClinicProfile.Commands;
 
 namespace DMD.API.Controllers.Clinic
 {
@@ -147,6 +148,46 @@ namespace DMD.API.Controllers.Clinic
         public async Task<IActionResult> AcceptDataPrivacy()
         {
             var result = await Mediator.Send(new ClinicCommands.AcceptDataPrivacy.Command());
+            if (result is NotFoundResponse)
+            {
+                return NotFound(result.Message);
+            }
+
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<ClinicModels.DataPrivacyStatusModel>)result).Data;
+            return Ok(data);
+        }
+
+        [HttpPost("accept-contract-policy")]
+        [Description("Accept data privacy for the current clinic")]
+        [ProducesResponseType(typeof(ClinicModels.DataPrivacyStatusModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> AcceptContractPrivacy()
+        {
+            var result = await Mediator.Send(new ClinicContract.AcceptSystemPolicy.Command());
+            if (result is NotFoundResponse)
+            {
+                return NotFound(result.Message);
+            }
+
+            if (result is BadRequestResponse)
+            {
+                return BadRequest(result.Message);
+            }
+
+            var data = ((SuccessResponse<ClinicModels.DataPrivacyStatusModel>)result).Data;
+            return Ok(data);
+        }
+
+        [HttpPost("accept-beta-testing")]
+        [Description("Accept data privacy for the current clinic")]
+        [ProducesResponseType(typeof(ClinicModels.DataPrivacyStatusModel), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> AcceptBetaPrivacy()
+        {
+            var result = await Mediator.Send(new ClinicContract.AcceptBetaTesting.Command());
             if (result is NotFoundResponse)
             {
                 return NotFound(result.Message);

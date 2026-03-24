@@ -57,6 +57,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.AcceptDataPrivacy
                     ClinicId = await protectionProvider.EncryptIntIdAsync(clinic.Id, ProtectedIdPurpose.Clinic),
                     ClinicName = clinic.ClinicName,
                     IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
+                    IsContractPolicyAccepted = clinic.IsContractPolicyAccepted,
+                    ForBetaTestingAccepted = clinic.ForBetaTestingAccepted,
                     IsLocked = clinic.IsLocked
                 });
             }

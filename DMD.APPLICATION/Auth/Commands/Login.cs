@@ -82,6 +82,8 @@ namespace DMD.APPLICATION.Auth.Commands
                 var clinicName = string.Empty;
                 var bannerImagePath = string.Empty;
                 var isDataPrivacyAccepted = false;
+                var isContractPolicyAccepted = false;
+                var forBetaTestingAccepted = false;
                 var isLocked = false;
                 var subscriptionType = string.Empty;
                 var validityDate = string.Empty;
@@ -94,6 +96,8 @@ namespace DMD.APPLICATION.Auth.Commands
                             x.ClinicName,
                             x.BannerImagePath,
                             x.IsDataPrivacyAccepted,
+                            x.IsContractPolicyAccepted,
+                            x.ForBetaTestingAccepted,
                             x.IsLocked,
                             x.Subsciption,
                             x.ValidityDate
@@ -105,6 +109,8 @@ namespace DMD.APPLICATION.Auth.Commands
                         clinicName = facility.ClinicName;
                         bannerImagePath = facility.BannerImagePath;
                         isDataPrivacyAccepted = facility.IsDataPrivacyAccepted;
+                        isContractPolicyAccepted = facility.IsContractPolicyAccepted;
+                        forBetaTestingAccepted = facility.ForBetaTestingAccepted;
                         isLocked = facility.IsLocked;
                         subscriptionType = facility.Subsciption.ToString();
                         validityDate = facility.ValidityDate.Year > 1
@@ -119,6 +125,8 @@ namespace DMD.APPLICATION.Auth.Commands
                     protectionProvider,
                     clinicName,
                     isDataPrivacyAccepted,
+                    isContractPolicyAccepted,
+                    forBetaTestingAccepted,
                     isLocked,
                     bannerImagePath,
                     subscriptionType,

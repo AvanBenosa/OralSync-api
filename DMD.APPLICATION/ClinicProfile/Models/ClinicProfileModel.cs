@@ -10,6 +10,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Models
         public string EmailAddress { get; set; } = string.Empty;
         public string ContactNumber { get; set; } = string.Empty;
         public bool IsDataPrivacyAccepted { get; set; }
+        public bool IsContractPolicyAccepted { get; set; }
+        public bool ForBetaTestingAccepted { get; set; }
         public string OpeningTime { get; set; } = "09:00";
         public string ClosingTime { get; set; } = "18:00";
         public string LunchStartTime { get; set; } = "12:00";

@@ -5,6 +5,8 @@ namespace DMD.APPLICATION.ClinicProfiles.Models
         public string ClinicId { get; set; } = string.Empty;
         public string ClinicName { get; set; } = string.Empty;
         public bool IsDataPrivacyAccepted { get; set; }
+        public bool IsContractPolicyAccepted { get; set; }
+        public bool ForBetaTestingAccepted { get; set; }
         public bool IsLocked { get; set; }
     }
 }

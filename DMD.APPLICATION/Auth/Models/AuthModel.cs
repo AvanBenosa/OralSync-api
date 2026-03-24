@@ -82,6 +82,8 @@
         public string Role { get; set; } = string.Empty;
         public string RoleLabel { get; set; } = string.Empty;
         public bool IsDataPrivacyAccepted { get; set; }
+        public bool IsContractPolicyAccepted { get; set; }
+        public bool ForBetaTestingAccepted { get; set; }
         public bool IsLocked { get; set; }
         public string SubscriptionType { get; set; } = string.Empty;
         public string ValidityDate { get; set; } = string.Empty;

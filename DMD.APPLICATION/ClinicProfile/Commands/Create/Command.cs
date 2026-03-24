@@ -67,7 +67,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Commands.Create
                     return new BadRequestResponse("Clinic profile already exists for this user.");
                 }
 
-                var item = new ClinicProfile
+                var item = new DOMAIN.Entities.UserProfile.ClinicProfile
                 {
                     ClinicName = request.ClinicName.Trim(),
                     Address = request.Address.Trim(),

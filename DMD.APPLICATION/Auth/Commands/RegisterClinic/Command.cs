@@ -117,7 +117,7 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
 
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-                var clinic = new ClinicProfile
+                var clinic = new DOMAIN.Entities.UserProfile.ClinicProfile
                 {
                     ClinicName = request.ClinicName.Trim(),
                     Address = request.ClinicAddress.Trim(),
@@ -168,6 +168,8 @@ namespace DMD.APPLICATION.Auth.Commands.RegisterClinic
                     protectionProvider,
                     clinic.ClinicName,
                     clinic.IsDataPrivacyAccepted,
+                    clinic.IsContractPolicyAccepted,
+                    clinic.ForBetaTestingAccepted,
                     clinic.IsLocked,
                     clinic.BannerImagePath,
                     clinic.Subsciption.ToString(),
