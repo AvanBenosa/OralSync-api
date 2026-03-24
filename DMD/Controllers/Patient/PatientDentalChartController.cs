@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Claims;
 using Commands = DMD.APPLICATION.PatientsModule.PatientDentalChart.Commands;
 using Queries = DMD.APPLICATION.PatientsModule.PatientDentalChart.Queries;
+using DMD.APPLICATION.Common.ProtectedIds;
 
 namespace DMD.API.Controllers.Patient
 {
@@ -136,7 +137,7 @@ namespace DMD.API.Controllers.Patient
                 HttpContext.RequestAborted,
                 "patients",
                 "dental-chart",
-                request.PatientInfoId,
+                request.PatientInfoId.Substring(0,10),
                 $"tooth-{request.ToothNumber}");
 
             return Ok(new UploadPatientDentalChartImageResponse
