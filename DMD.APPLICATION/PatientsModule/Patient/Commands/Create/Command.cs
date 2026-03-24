@@ -31,7 +31,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
         public string Occupation { get; set; } = string.Empty;
         public string Religion { get; set; } = string.Empty;
         public BloodTypes BloodType { get; set; }
-        public CivilStatus CivilStatus { get; set; }
+        public string CivilStatus { get; set; }
         public string ProfilePicture { get; set; } = string.Empty;
     }
 
@@ -62,6 +62,19 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Create
                 if (!int.TryParse(clinicIdValue, out var clinicId))
                 {
                     return new BadRequestResponse("Clinic registration must be completed before creating patients.");
+                }
+
+                // 🔍 Check for duplicate (case-insensitive & trimmed)
+                var isDuplicate = await dbContext.PatientInfos.AnyAsync(p =>
+                    p.ClinicProfileId == clinicId &&
+                    p.FirstName.Trim().ToLower() == request.FirstName.Trim().ToLower() &&
+                    p.LastName.Trim().ToLower() == request.LastName.Trim().ToLower() &&
+                    (p.MiddleName ?? "").Trim().ToLower() == (request.MiddleName ?? "").Trim().ToLower(),
+                    cancellationToken);
+
+                if (isDuplicate)
+                {
+                    return new BadRequestResponse("Patient already exists.");
                 }
 
                 var today = DateTime.Today;

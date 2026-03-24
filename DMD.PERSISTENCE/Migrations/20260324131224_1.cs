@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DMD.PERSISTENCE.Migrations
 {
     /// <inheritdoc />
-    public partial class _001 : Migration
+    public partial class _1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -415,7 +415,7 @@ namespace DMD.PERSISTENCE.Migrations
                     Occupation = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Religion = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BloodType = table.Column<int>(type: "int", nullable: false),
-                    CivilStatus = table.Column<int>(type: "int", nullable: false),
+                    CivilStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ProfilePicture = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Tag = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),

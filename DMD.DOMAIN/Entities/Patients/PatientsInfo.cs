@@ -24,7 +24,7 @@ namespace DMD.DOMAIN.Entities.Patients
         public string Occupation { get; set; }
         public string Religion { get; set;  }
         public BloodTypes BloodType { get; set; }
-        public CivilStatus CivilStatus { get; set; }
+        public string CivilStatus { get; set; }
 
         public string ProfilePicture { get; set; }
 

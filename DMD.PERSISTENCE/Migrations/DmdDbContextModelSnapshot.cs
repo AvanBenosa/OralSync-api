@@ -443,8 +443,9 @@ namespace DMD.PERSISTENCE.Migrations
                     b.Property<int>("BloodType")
                         .HasColumnType("int");
 
-                    b.Property<int>("CivilStatus")
-                        .HasColumnType("int");
+                    b.Property<string>("CivilStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ClinicProfileId")
                         .HasColumnType("int");

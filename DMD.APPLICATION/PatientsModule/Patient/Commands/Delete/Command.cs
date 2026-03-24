@@ -4,6 +4,7 @@ using DMD.PERSISTENCE.Context;
 using DMD.SERVICES.ProtectionProvider;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using NJsonSchema.Annotations;
 
 namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Delete
@@ -32,6 +33,24 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Delete
                 var patientId = await protectionProvider.DecryptIntIdAsync(request.Id, ProtectedIdPurpose.Patient);
                 var item = await dbContext.PatientInfos
                     .FirstOrDefaultAsync(x => x.Id == patientId, cancellationToken);
+
+                var progressNotes = await dbContext.PatientProgressNotes.AsNoTracking()
+                    .AnyAsync(x => x.PatientInfoId == item.Id);
+
+                var patientPhotos = await dbContext.PatientMedicalHistories.AsNoTracking()
+                    .AnyAsync(x => x.PatientInfoId == item.Id);
+
+                var dentalChart = await dbContext.PatientTeeth.AsNoTracking()
+                    .AnyAsync(x => x.PatientInfoId == item.Id);
+
+                var patientForms = await dbContext.PatientForms.AsNoTracking()
+                    .AnyAsync(x => x.PatientInfoId == item.Id);
+
+                var appointmentRequest = await dbContext.AppointmentRequests.AsNoTracking()
+                    .AnyAsync(x => x.PatientInfoId == item.Id);
+
+                if (progressNotes || patientPhotos || dentalChart || patientForms || appointmentRequest) 
+                    return new BadRequestResponse("Cannot delete this record due to existing dependencies.");
 
                 if (item == null) return new BadRequestResponse("Item may have been modified or removed.");
 

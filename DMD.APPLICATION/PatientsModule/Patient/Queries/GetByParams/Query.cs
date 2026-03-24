@@ -54,8 +54,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Queries.GetByParams
                     TotalCount = 0
                 };
 
-                var query = dbContext.PatientInfos
-                    .AsNoTracking()
+                var query = dbContext.PatientInfos.AsNoTracking()
                     .Where(x => x.ClinicProfileId == clinicId.Value);
 
                 var keyword = request.Que?.Trim();

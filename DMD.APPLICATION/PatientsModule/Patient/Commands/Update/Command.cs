@@ -28,7 +28,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Update
         public string Occupation { get; set; } = string.Empty;
         public string Religion { get; set; } = string.Empty;
         public BloodTypes BloodType { get; set; }
-        public CivilStatus CivilStatus { get; set; }
+        public string CivilStatus { get; set; }
         public string ProfilePicture { get; set; } = string.Empty;
     }
 

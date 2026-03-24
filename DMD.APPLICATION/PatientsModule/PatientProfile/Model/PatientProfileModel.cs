@@ -20,7 +20,7 @@ namespace DMD.APPLICATION.PatientsModule.PatientProfile.Model
         public string Occupation { get; set; } = string.Empty;
         public string Religion { get; set; } = string.Empty;
         public BloodTypes BloodType { get; set; }
-        public CivilStatus CivilStatus { get; set; }
+        public string CivilStatus { get; set; }
         public PatientTag Tag { get; set; }
     }
 }

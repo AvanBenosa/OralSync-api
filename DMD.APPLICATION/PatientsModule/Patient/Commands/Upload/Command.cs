@@ -32,6 +32,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             "EmailAddress",
             "BirthDate",
             "ContactNumber",
+            "Gender",
             "Address",
             "Suffix",
             "Occupation",
@@ -151,13 +152,6 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                         return;
                     }
 
-                    if (!TryParseEnum(row.CivilStatus, CivilStatus.None, out CivilStatus civilStatus))
-                    {
-                        errors.Add($"Row {row.RowNumber}: Invalid CivilStatus value.");
-                        Interlocked.Increment(ref skippedCount);
-                        return;
-                    }
-
                     if (!TryParseEnum(row.BloodType, BloodTypes.A_Positive, out BloodTypes bloodType))
                     {
                         errors.Add($"Row {row.RowNumber}: Invalid BloodType value.");
@@ -173,8 +167,8 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                     }
 
                     var identityKey = BuildIdentityKey(firstName, lastName, middleName, birthDate);
-                    var emailKey = NormalizeValue(row.EmailAddress);
-                    var contactKey = NormalizeContact(row.ContactNumber);
+                    //var emailKey = NormalizeValue(row.EmailAddress);
+                    //var contactKey = NormalizeContact(row.ContactNumber);
 
                     if (!string.IsNullOrWhiteSpace(identityKey) &&
                         (existingIdentityKeys.Contains(identityKey) || !fileIdentityKeys.TryAdd(identityKey, 0)))
@@ -184,21 +178,21 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                         return;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(emailKey) &&
-                        (existingEmailKeys.Contains(emailKey) || !fileEmailKeys.TryAdd(emailKey, 0)))
-                    {
-                        errors.Add($"Row {row.RowNumber}: Patient already exists based on email address.");
-                        Interlocked.Increment(ref skippedCount);
-                        return;
-                    }
+                    //if (!string.IsNullOrWhiteSpace(emailKey) &&
+                    //    (existingEmailKeys.Contains(emailKey) || !fileEmailKeys.TryAdd(emailKey, 0)))
+                    //{
+                    //    errors.Add($"Row {row.RowNumber}: Patient already exists based on email address.");
+                    //    Interlocked.Increment(ref skippedCount);
+                    //    return;
+                    //}
 
-                    if (!string.IsNullOrWhiteSpace(contactKey) &&
-                        (existingContactKeys.Contains(contactKey) || !fileContactKeys.TryAdd(contactKey, 0)))
-                    {
-                        errors.Add($"Row {row.RowNumber}: Patient already exists based on contact number.");
-                        Interlocked.Increment(ref skippedCount);
-                        return;
-                    }
+                    //if (!string.IsNullOrWhiteSpace(contactKey) &&
+                    //    (existingContactKeys.Contains(contactKey) || !fileContactKeys.TryAdd(contactKey, 0)))
+                    //{
+                    //    errors.Add($"Row {row.RowNumber}: Patient already exists based on contact number.");
+                    //    Interlocked.Increment(ref skippedCount);
+                    //    return;
+                    //}
 
                     validRows.Add(new ValidatedUploadRow
                     {
@@ -206,6 +200,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                         FirstName = firstName,
                         LastName = lastName,
                         MiddleName = middleName,
+                        Gender = NormalizeValue(row.Gender),
                         EmailAddress = NormalizeValue(row.EmailAddress),
                         BirthDate = birthDate,
                         ContactNumber = NormalizeValue(row.ContactNumber),
@@ -214,8 +209,9 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                         Occupation = NormalizeValue(row.Occupation),
                         Religion = NormalizeValue(row.Religion),
                         BloodType = bloodType,
-                        CivilStatus = civilStatus,
+                        CivilStatus = NormalizeValue(row.CivilStatus),
                         ProfilePicture = NormalizeValue(row.ProfilePicture),
+
                     });
                 });
 
@@ -234,6 +230,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                             EmailAddress = row.EmailAddress,
                             BirthDate = row.BirthDate,
                             ContactNumber = row.ContactNumber,
+                            Gender = row.Gender,
                             Address = row.Address,
                             Suffix = row.Suffix,
                             Occupation = row.Occupation,
@@ -385,6 +382,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 EmailAddress = GetCellString(row, headerMap, "EmailAddress"),
                 BirthDate = GetCellString(row, headerMap, "BirthDate"),
                 ContactNumber = GetCellString(row, headerMap, "ContactNumber"),
+                Gender = GetCellString(row,headerMap,"Gender"),
                 Address = GetCellString(row, headerMap, "Address"),
                 Suffix = GetCellString(row, headerMap, "Suffix"),
                 Occupation = GetCellString(row, headerMap, "Occupation"),
@@ -406,6 +404,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 EmailAddress = GetCellString(rowValues, headerMap, "EmailAddress"),
                 BirthDate = GetCellString(rowValues, headerMap, "BirthDate"),
                 ContactNumber = GetCellString(rowValues, headerMap, "ContactNumber"),
+                Gender = GetCellString(rowValues,headerMap,"Gender"),
                 Address = GetCellString(rowValues, headerMap, "Address"),
                 Suffix = GetCellString(rowValues, headerMap, "Suffix"),
                 Occupation = GetCellString(rowValues, headerMap, "Occupation"),
@@ -444,6 +443,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
                 && string.IsNullOrWhiteSpace(row.EmailAddress)
                 && string.IsNullOrWhiteSpace(row.BirthDate)
                 && string.IsNullOrWhiteSpace(row.ContactNumber)
+                && string.IsNullOrWhiteSpace(row.Gender)
                 && string.IsNullOrWhiteSpace(row.Address)
                 && string.IsNullOrWhiteSpace(row.Suffix)
                 && string.IsNullOrWhiteSpace(row.Occupation)
@@ -612,6 +612,7 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             public string EmailAddress { get; set; } = string.Empty;
             public string BirthDate { get; set; } = string.Empty;
             public string ContactNumber { get; set; } = string.Empty;
+            public string Gender { get; set; } = string.Empty;
             public string Address { get; set; } = string.Empty;
             public string Suffix { get; set; } = string.Empty;
             public string Occupation { get; set; } = string.Empty;
@@ -630,12 +631,13 @@ namespace DMD.APPLICATION.PatientsModule.Patient.Commands.Upload
             public string EmailAddress { get; set; } = string.Empty;
             public DateTime? BirthDate { get; set; }
             public string ContactNumber { get; set; } = string.Empty;
+            public string Gender { get; set; } = string.Empty;
             public string Address { get; set; } = string.Empty;
             public Suffix Suffix { get; set; }
             public string Occupation { get; set; } = string.Empty;
             public string Religion { get; set; } = string.Empty;
             public BloodTypes BloodType { get; set; }
-            public CivilStatus CivilStatus { get; set; }
+            public string CivilStatus { get; set; }
             public string ProfilePicture { get; set; } = string.Empty;
         }
     }
