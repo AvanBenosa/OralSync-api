@@ -103,7 +103,7 @@ namespace DMD.APPLICATION.ClinicProfiles.Queries.GetCurrent
                         EmailAddress = clinic.EmailAddress,
                         ContactNumber = clinic.ContactNumber,
                         IsDataPrivacyAccepted = clinic.IsDataPrivacyAccepted,
-                        IsContractPolicyAccepted = clinic.IsDataPrivacyAccepted,
+                        IsContractPolicyAccepted = clinic.IsContractPolicyAccepted,
                         ForBetaTestingAccepted = clinic.ForBetaTestingAccepted,
                         OpeningTime = clinic.OpeningTime,
                         ClosingTime = clinic.ClosingTime,
