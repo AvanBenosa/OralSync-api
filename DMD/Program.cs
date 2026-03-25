@@ -123,7 +123,7 @@ try
 {
     ApplyPendingMigrations(app);
     await ConfigureDatabase(services);
-    await SeedDatabase(app);
+    //await SeedDatabase(app);
 }
 catch (Exception ex)
 {

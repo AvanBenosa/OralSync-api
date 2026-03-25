@@ -1,4 +1,4 @@
-using DMD.DOMAIN.Entities.UserProfile;
+﻿using DMD.DOMAIN.Entities.UserProfile;
 using DMD.DOMAIN.Enums;
 using DMD.PERSISTENCE.Context;
 using Microsoft.Data.SqlClient;
@@ -31,24 +31,40 @@ namespace DMD.API.Configurations
 
         internal static async Task SeedDatabase(WebApplication app)
         {
-            using (var scope = app.Services.CreateScope())
-            {
-                var services = scope.ServiceProvider;
-                try
-                {
-                    var userManager = services.GetRequiredService<UserManager<UserProfile>>();
-                    var configuration = services.GetRequiredService<IConfiguration>();
-                    var logger = services.GetRequiredService<ILogger<Program>>();
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
 
-                    var context = services.GetRequiredService<DmdDbContext>();
-                    await context.Database.EnsureCreatedAsync();
-                    await SeedDatabaseInternal(userManager, configuration, logger);
-                }
-                catch (Exception ex)
+            var logger = services.GetRequiredService<ILogger<Program>>();
+
+            try
+            {
+                logger.LogInformation("🔹 Resolving UserManager...");
+                var userManager = services.GetRequiredService<UserManager<UserProfile>>();
+
+                logger.LogInformation("🔹 Resolving Configuration...");
+                var configuration = services.GetRequiredService<IConfiguration>();
+
+                logger.LogInformation("🔹 Resolving DbContext...");
+                var context = services.GetRequiredService<DmdDbContext>();
+
+                logger.LogInformation("🔹 Applying migrations...");
+                await context.Database.MigrateAsync(); // ✅ better than EnsureCreated
+
+                logger.LogInformation("🔹 Starting seed process...");
+                await SeedDatabaseInternal(userManager, configuration, logger);
+
+                logger.LogInformation("✅ Seed completed successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "❌ Error during seeding: {Message}", ex.Message);
+
+                if (ex.InnerException != null)
                 {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "An error occurred while seeding the database.");
+                    logger.LogError("❌ Inner Exception: {InnerMessage}", ex.InnerException.Message);
                 }
+
+                throw; // 🔥 VERY IMPORTANT (so you see actual error in dev)
             }
         }
 
@@ -57,14 +73,19 @@ namespace DMD.API.Configurations
             IConfiguration configuration,
             ILogger logger)
         {
-            // Seed admin user
-            var adminEmail = configuration["Seed:Admin:Email"] ?? "adminAvan";
+            // ✅ safer fallback email
+            var adminEmail = configuration["Seed:Admin:Email"] ?? "admin@oralsync.local";
             var adminPassword = configuration["Seed:Admin:Password"] ?? "Xdrx3991*?";
+
+            logger.LogInformation("🔹 Checking admin user: {Email}", adminEmail);
+
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
             adminUser ??= await userManager.FindByNameAsync(adminEmail);
 
-            if (adminUser == null)  
+            if (adminUser == null)
             {
+                logger.LogInformation("🔹 Admin not found. Creating new admin...");
+
                 adminUser = new UserProfile
                 {
                     UserName = adminEmail,
@@ -82,20 +103,23 @@ namespace DMD.API.Configurations
                 };
 
                 var result = await userManager.CreateAsync(adminUser, adminPassword);
+
                 if (result.Succeeded)
                 {
-                    logger.LogInformation("Admin user created successfully with email {Email}", adminEmail);
+                    logger.LogInformation("✅ Admin user created successfully: {Email}", adminEmail);
                 }
                 else
                 {
                     logger.LogError(
-                        "Failed to create admin user {Email}. Errors: {Errors}",
+                        "❌ Failed to create admin user {Email}. Errors: {Errors}",
                         adminEmail,
                         string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
             }
             else
             {
+                logger.LogInformation("🔹 Admin already exists. Checking for updates...");
+
                 var needsUpdate = false;
 
                 if (string.IsNullOrWhiteSpace(adminUser.Email))
@@ -118,14 +142,25 @@ namespace DMD.API.Configurations
 
                 if (needsUpdate)
                 {
+                    logger.LogInformation("🔹 Updating existing admin user...");
+
                     var updateResult = await userManager.UpdateAsync(adminUser);
+
                     if (!updateResult.Succeeded)
                     {
                         logger.LogError(
-                            "Failed to update existing admin user {Email}. Errors: {Errors}",
+                            "❌ Failed to update admin user {Email}. Errors: {Errors}",
                             adminEmail,
                             string.Join(", ", updateResult.Errors.Select(e => e.Description)));
                     }
+                    else
+                    {
+                        logger.LogInformation("✅ Admin user updated successfully.");
+                    }
+                }
+                else
+                {
+                    logger.LogInformation("✅ Admin user is already up-to-date.");
                 }
             }
         }
