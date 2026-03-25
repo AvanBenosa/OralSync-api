@@ -1,0 +1,67 @@
+﻿trigger:
+- main   # 🔁 CHANGE if your branch is not 'main' (e.g., staging, dev)
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'   # ⚙️ Usually stays 'Release'
+  solution: 'DMD.sln'             # ⚠️ CHANGE if your .sln file has a different name/path
+  apiProject: 'DMD/DMD.csproj'    # ⚠️ CHANGE if your API project path is different
+  publishDirectory: '$(Build.ArtifactStagingDirectory)/api'  # ✅ no need to change
+
+steps:
+
+# 🧱 Install .NET 8 SDK
+- task: UseDotNet@2
+  displayName: 'Install .NET 8 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'   # ⚠️ CHANGE if you're using a different .NET version
+
+# 📦 Restore NuGet packages
+- task: DotNetCoreCLI@2
+  displayName: 'Restore packages'
+  inputs:
+    command: 'restore'
+    projects: '$(solution)'
+
+# 🔨 Build solution
+- task: DotNetCoreCLI@2
+  displayName: 'Build solution'
+  inputs:
+    command: 'build'
+    projects: '$(solution)'
+    arguments: '--configuration $(buildConfiguration) --no-restore'
+
+# 🚀 Publish API project
+- task: DotNetCoreCLI@2
+  displayName: 'Publish API'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(apiProject)'
+    arguments: '--configuration $(buildConfiguration) --output $(publishDirectory) --no-build'
+    zipAfterPublish: true
+
+# 📤 Upload build artifact
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifact'
+  inputs:
+    PathtoPublish: '$(publishDirectory)'
+    ArtifactName: 'api-drop'
+    publishLocation: 'Container'
+
+# 🚀 OPTIONAL: Deploy to Azure App Service
+- task: AzureWebApp@1
+  displayName: 'Deploy to Azure App Service'
+  inputs:
+    azureSubscription: 'azure-oralsync-conn'  
+    # ⚠️ REQUIRED: Replace with your Azure DevOps Service Connection name
+
+    appType: 'webApp'
+
+    appName: 'oralsync-api-prod'  
+    # ⚠️ REQUIRED: Replace with your Azure App Service name (in Azure portal)
+
+    package: '$(publishDirectory)/**/*.zip'

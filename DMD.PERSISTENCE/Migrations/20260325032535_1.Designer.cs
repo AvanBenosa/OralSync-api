@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DMD.PERSISTENCE.Migrations
 {
     [DbContext(typeof(DmdDbContext))]
-    [Migration("20260324131224_1")]
+    [Migration("20260325032535_1")]
     partial class _1
     {
         /// <inheritdoc />
