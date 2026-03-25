@@ -118,6 +118,17 @@ app.UseMiddleware<ParameterPollutionMiddleware>();
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
 
+
+try
+{
+    ApplyPendingMigrations(app);
+    await ConfigureDatabase(services);
+    await SeedDatabase(app);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Startup error: {ex.Message}");
+}
 // Apply database migrations automatically
 ApplyPendingMigrations(app);
 
@@ -126,9 +137,6 @@ ConfigureEndpoints(app);
 
 // Enable CORS middleware
 ConfigureCors(app);
-
-// Ensure database is ready / seeded config
-await ConfigureDatabase(services);
 
 // ==========================
 // 12. AUTHENTICATION PIPELINE
@@ -145,8 +153,5 @@ app.MapGet("/health", () => Results.Ok("DMD API is running."));
 
 // Map controller routes
 app.MapControllers();
-
-// Seed initial data (users, roles, etc.)
-await SeedDatabase(app);
 
 app.Run();
