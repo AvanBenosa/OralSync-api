@@ -7,9 +7,7 @@ namespace DMD.API.Configurations
     {
         internal static void RegisterSwash(WebApplicationBuilder builder)
         {
-            var aspEnv = builder.Configuration.GetSection("ASPNETCORE_ENVIRONMENT")?.Value;
-
-            if (aspEnv == "Development" || aspEnv == "Production" || aspEnv == "Test")
+            if (ShouldEnableSwagger(builder.Environment))
             {
                 builder.Services.AddSwaggerGen(options =>
                 {
@@ -29,8 +27,7 @@ namespace DMD.API.Configurations
 
         internal static void UseSwagger(WebApplication app)
         {
-            var aspEnv = app.Configuration.GetSection("ASPNETCORE_ENVIRONMENT")?.Value;
-            if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Local") || aspEnv == "Local" || aspEnv == "Test")
+            if (ShouldEnableSwagger(app.Environment))
             {
                 app.UseSwagger(options =>
                 {
@@ -43,6 +40,13 @@ namespace DMD.API.Configurations
                     options.RoutePrefix = string.Empty;
                 });
             }
+        }
+
+        private static bool ShouldEnableSwagger(IHostEnvironment environment)
+        {
+            return environment.IsDevelopment()
+                || environment.IsEnvironment("Local")
+                || environment.IsEnvironment("Test");
         }
     }
 }

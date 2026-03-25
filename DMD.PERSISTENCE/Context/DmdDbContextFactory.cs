@@ -8,10 +8,11 @@ public sealed class DmdDbContextFactory : IDesignTimeDbContextFactory<DmdDbConte
 {
     public DmdDbContext CreateDbContext(string[] args)
     {
-        var settingsPath = ResolveAppSettingsPath();
-        var connectionString = ReadConnectionString(settingsPath)
+        var settingsDirectory = ResolveSettingsDirectory();
+        var environmentName = ResolveEnvironmentName();
+        var connectionString = ReadConnectionString(settingsDirectory, environmentName)
             ?? throw new InvalidOperationException(
-                "Connection string 'Default' was not found for design-time DbContext creation."
+                $"Connection string 'Default' was not found for design-time DbContext creation. Environment: '{environmentName ?? "Base"}'."
             );
 
         var optionsBuilder = new DbContextOptionsBuilder<DmdDbContext>();
@@ -20,20 +21,20 @@ public sealed class DmdDbContextFactory : IDesignTimeDbContextFactory<DmdDbConte
         return new DmdDbContext(optionsBuilder.Options);
     }
 
-    private static string ResolveAppSettingsPath()
+    private static string ResolveSettingsDirectory()
     {
         var currentDirectory = Directory.GetCurrentDirectory();
         var candidates = new[]
         {
-            Path.Combine(currentDirectory, "appsettings.json"),
-            Path.Combine(currentDirectory, "..", "DMD", "appsettings.json"),
-            Path.Combine(currentDirectory, "DMD", "appsettings.json"),
+            currentDirectory,
+            Path.Combine(currentDirectory, "..", "DMD"),
+            Path.Combine(currentDirectory, "DMD"),
         };
 
         foreach (var candidate in candidates)
         {
             var fullPath = Path.GetFullPath(candidate);
-            if (File.Exists(fullPath))
+            if (File.Exists(Path.Combine(fullPath, "appsettings.json")))
             {
                 return fullPath;
             }
@@ -44,7 +45,46 @@ public sealed class DmdDbContextFactory : IDesignTimeDbContextFactory<DmdDbConte
         );
     }
 
-    private static string? ReadConnectionString(string settingsPath)
+    private static string? ResolveEnvironmentName()
+    {
+        var aspNetCoreEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (!string.IsNullOrWhiteSpace(aspNetCoreEnvironment))
+        {
+            return aspNetCoreEnvironment;
+        }
+
+        var dotNetEnvironment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+        if (!string.IsNullOrWhiteSpace(dotNetEnvironment))
+        {
+            return dotNetEnvironment;
+        }
+
+        return null;
+    }
+
+    private static string? ReadConnectionString(string settingsDirectory, string? environmentName)
+    {
+        var connectionString = ReadConnectionStringFromFile(Path.Combine(settingsDirectory, "appsettings.json"));
+
+        if (string.IsNullOrWhiteSpace(environmentName))
+        {
+            return connectionString;
+        }
+
+        var environmentSettingsPath = Path.Combine(
+            settingsDirectory,
+            $"appsettings.{environmentName}.json"
+        );
+
+        if (!File.Exists(environmentSettingsPath))
+        {
+            return connectionString;
+        }
+
+        return ReadConnectionStringFromFile(environmentSettingsPath) ?? connectionString;
+    }
+
+    private static string? ReadConnectionStringFromFile(string settingsPath)
     {
         using var stream = File.OpenRead(settingsPath);
         using var document = JsonDocument.Parse(stream);
