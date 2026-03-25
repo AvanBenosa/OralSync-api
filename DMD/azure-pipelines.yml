@@ -2,7 +2,7 @@
 - main   # 🔁 CHANGE if your branch is not 'main' (e.g., staging, dev)
 
 pool:
-  vmImage: 'windows-latest'
+  name: 'OralSyncPool'
 
 variables:
   buildConfiguration: 'Release'   # ⚙️ Usually stays 'Release'
