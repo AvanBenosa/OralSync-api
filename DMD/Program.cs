@@ -10,12 +10,18 @@ using static DMD.API.Configurations.Authentication;
 using DMD.API.Configurations;
 using Hangfire;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 
 // ==========================
 // BUILD APPLICATION
 // ==========================
 var builder = WebApplication.CreateBuilder(args);
+
+// Enhanced logging for startup diagnostics
+builder.Logging.AddConsole();
+
 
 
 // ==========================
@@ -83,10 +89,24 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.AddServerHeader = false;
 });
 
+// Log environment and masked connection strings for diagnostics
+var env = builder.Environment;
+Console.WriteLine($"🚀 Startup Environment: {env.EnvironmentName}");
+Console.WriteLine($"🚀 Configuration Sources Count: {builder.Configuration.Sources.Count()}");
+
+var defaultConn = builder.Configuration.GetConnectionString("Default");
+var hangfireConn = builder.Configuration.GetConnectionString("Hangfire");
+Console.WriteLine($"🚀 Default Conn: {(defaultConn?.StartsWith("Server=") == true ? "✅ Configured" : "❌ Missing/Invalid")}");
+Console.WriteLine($"🚀 Hangfire Conn: {(hangfireConn?.StartsWith("Server=") == true ? "✅ Configured" : "❌ Missing/Invalid")}");
+
 // ==========================
 // BUILD APP PIPELINE
 // ==========================
 var app = builder.Build();
+
+var logger = app.Logger;
+var isProduction = app.Environment.IsProduction() == true;
+logger.LogInformation("✅ App built successfully. IsProduction: {IsProd}", isProduction);
 
 // ==========================
 // 7. DEVELOPMENT TOOLS
@@ -109,28 +129,41 @@ app.Use(async (context, next) =>
 // 10. CUSTOM MIDDLEWARE
 // ==========================
 // Prevent parameter pollution attacks
-app.UseMiddleware<ParameterPollutionMiddleware>();
+//app.UseMiddleware<ParameterPollutionMiddleware>();
 
 // ==========================
-// 11. DATABASE INITIALIZATION
+///** 11. DATABASE INITIALIZATION (with validation) **
 // ==========================
-// Create scope for DI services
-using var scope = app.Services.CreateScope();
-var services = scope.ServiceProvider;
-
+logger.LogInformation("🔄 Phase 11: Starting Database Initialization...");
 
 try
 {
-    ApplyPendingMigrations(app);
-    await ConfigureDatabase(services);
-    await SeedDatabase(app);
+    using var scope = app.Services.CreateScope();
+    var scopedServices = scope.ServiceProvider;
+    logger.LogInformation("✅ Scope created successfully.");
+
+    if (!isProduction)
+    {
+        logger.LogInformation("🔄 [DEV ONLY] Calling ConfigureDatabase...");
+        await ConfigureDatabase(scopedServices);
+
+        logger.LogInformation("🔄 [DEV ONLY] Calling ApplyPendingMigrations...");
+        ApplyPendingMigrations(app);
+
+        logger.LogInformation("🔄 [DEV ONLY] Calling SeedDatabase...");
+        await SeedDatabase(app);
+        logger.LogInformation("✅ [DEV ONLY] Database setup complete.");
+    }
+    else
+    {
+        logger.LogWarning("⚠️  [PROD] Skipping automatic DB setup (migrations/seed). Run manually.");
+    }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Startup error: {ex.Message}");
+    logger.LogError(ex, "💥 FATAL: Database initialization failed at phase 11. Stack: {StackTrace}", ex.StackTrace);
+    throw; // Re-throw to prevent app start if critical
 }
-// Apply database migrations automatically
-ApplyPendingMigrations(app);
 
 // Configure API endpoints (minimal APIs or grouped routes)
 ConfigureEndpoints(app);
@@ -148,8 +181,15 @@ ConfigureAuthentication(app);
 // ==========================
 // 13. ROUTES / ENDPOINTS
 // ==========================
-// Health check endpoint
-app.MapGet("/health", () => Results.Ok("DMD API is running."));
+// Enhanced health + startup log endpoint
+app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow, Environment = app.Environment.EnvironmentName }));
+
+app.MapGet("/startup-log", () => Results.Ok(new {
+    Environment = app.Environment.EnvironmentName,
+    ConnStringsConfigured = app.Configuration.GetConnectionString("Default") != null,
+    IsProduction = app.Environment.IsProduction(),
+    Timestamp = DateTime.UtcNow
+}));
 
 // Map controller routes
 app.MapControllers();

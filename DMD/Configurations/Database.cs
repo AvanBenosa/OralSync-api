@@ -165,21 +165,33 @@ namespace DMD.API.Configurations
             }
         }
 
-        internal static async Task ConfigureDatabase(IServiceProvider services)
+internal static async Task ConfigureDatabase(IServiceProvider services)
         {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("🔄 ConfigureDatabase started.");
+
             try
             {
                 await EnsureHangfireDatabaseAsync(services);
 
                 var context = services.GetRequiredService<DmdDbContext>();
+                logger.LogInformation("✅ DbContext resolved.");
 
                 await context.Database.MigrateAsync();
+                logger.LogInformation("✅ Migrations applied.");
+
                 await EnsureClinicIdIsNullableAsync(context);
+                logger.LogInformation("✅ ClinicId nullable fix applied.");
+            }
+            catch (SqlException sqlEx)
+            {
+                logger.LogError(sqlEx, "💥 SqlException in ConfigureDatabase: Code={Number}, Message={Message}", sqlEx.Number, sqlEx.Message);
+                throw;
             }
             catch (Exception ex)
             {
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred during migration.");
+                logger.LogError(ex, "💥 Unexpected error in ConfigureDatabase");
+                throw;
             }
         }
 
@@ -215,17 +227,19 @@ namespace DMD.API.Configurations
             await context.Database.ExecuteSqlRawAsync(sql);
         }
 
-        internal static async Task EnsureHangfireDatabaseAsync(IServiceProvider services)
+internal static async Task EnsureHangfireDatabaseAsync(IServiceProvider services)
         {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("🔄 EnsureHangfireDatabaseAsync started.");
+
             try
             {
                 var configuration = services.GetRequiredService<IConfiguration>();
-                var logger = services.GetRequiredService<ILogger<Program>>();
                 var hangfireConnectionString = configuration.GetConnectionString("Hangfire");
 
                 if (string.IsNullOrWhiteSpace(hangfireConnectionString))
                 {
-                    logger.LogInformation("Hangfire connection string is not configured. Skipping Hangfire database bootstrap.");
+                    logger.LogInformation("Hangfire connection string is not configured. Skipping.");
                     return;
                 }
 
@@ -234,9 +248,11 @@ namespace DMD.API.Configurations
 
                 if (string.IsNullOrWhiteSpace(hangfireDatabaseName))
                 {
-                    logger.LogWarning("Hangfire Initial Catalog is missing. Skipping Hangfire database bootstrap.");
+                    logger.LogWarning("Hangfire Initial Catalog missing. Skipping.");
                     return;
                 }
+
+                logger.LogWarning("⚠️ Attempting CREATE DATABASE on master (may fail in Azure SQL - normal in prod).");
 
                 var masterBuilder = new SqlConnectionStringBuilder(hangfireConnectionString)
                 {
@@ -252,12 +268,16 @@ namespace DMD.API.Configurations
                 command.Parameters.AddWithValue("@databaseName", hangfireDatabaseName);
 
                 await command.ExecuteNonQueryAsync();
-                logger.LogInformation("Ensured Hangfire database {DatabaseName} exists.", hangfireDatabaseName);
+                logger.LogInformation("✅ Hangfire DB ensured: {DatabaseName}", hangfireDatabaseName);
+            }
+            catch (SqlException sqlEx)
+            {
+                logger.LogWarning(sqlEx, "⚠️ SqlException in EnsureHangfireDatabaseAsync (likely permissions): Code={Number}, Message={Message}", 
+                    sqlEx.Number, sqlEx.Message);
             }
             catch (Exception ex)
             {
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred while ensuring the Hangfire database exists.");
+                logger.LogError(ex, "💥 Unexpected error in EnsureHangfireDatabaseAsync");
             }
         }
     }
