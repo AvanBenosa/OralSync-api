@@ -110,8 +110,8 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                         LatestActivity = string.IsNullOrWhiteSpace(x.LatestActivity) ? "Patient record created" : x.LatestActivity
                     }))).ToList();
 
-                var todayAppointments = await BuildAppointmentList(today, tomorrow, cancellationToken);
-                var nextDayAppointments = await BuildAppointmentList(tomorrow, nextDay, cancellationToken);
+                var todayAppointments = await BuildAppointmentList(today, tomorrow,clinicId, cancellationToken);
+                var nextDayAppointments = await BuildAppointmentList(tomorrow, nextDay,clinicId, cancellationToken);
 
                 var monthlyIncomeRaw = await dbContext.PatientProgressNotes
                     .AsNoTracking()
@@ -185,10 +185,12 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
         private async Task<List<DashboardAppointmentModel>> BuildAppointmentList(
             DateTime start,
             DateTime end,
+            int? clinicId,
             CancellationToken cancellationToken)
         {
             var items = await dbContext.PatientInfos
                 .AsNoTracking()
+                .Where(x => x.ClinicProfileId == clinicId)
                 .SelectMany(p => p.AppointmentRequests
                     .Where(a => a.AppointmentDateFrom >= start && a.AppointmentDateFrom < end)
                     .Select(a => new
@@ -196,10 +198,9 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                         a.AppointmentDateFrom,
                         FullName = p.FirstName + " " + p.LastName,
                         a.ReasonForVisit,
-                        a.Status
+                        a.Status,
                     }))
                 .OrderBy(x => x.AppointmentDateFrom)
-                .Take(5)
                 .ToListAsync(cancellationToken);
 
             return items.Select(x => new DashboardAppointmentModel
