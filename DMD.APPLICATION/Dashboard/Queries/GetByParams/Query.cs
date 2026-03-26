@@ -39,41 +39,53 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                 var yearStart = new DateTime(today.Year, 1, 1);
                 var nextYearStart = yearStart.AddYears(1);
 
-                var totalPatients = await dbContext.PatientInfos
-                    .AsNoTracking()
-                    .CountAsync(cancellationToken);
+                var clinicId = await protectionProvider.DecryptNullableIntIdAsync(
+                        request.ClinicId,
+                        ProtectedIdPurpose.Clinic);
+
+                var patientInfos = await dbContext.PatientInfos.AsNoTracking()
+                    .Where(x => x.ClinicProfileId == clinicId)
+                    .Select(x => new {x.Id,x.ClinicProfileId})
+                    .ToListAsync();
+
+                var patientIds = patientInfos.Select(x => x.Id).ToHashSet();
 
                 var patientsToday = await dbContext.PatientInfos
                     .AsNoTracking()
+                    .Where(x => x.ClinicProfileId == clinicId)
                     .CountAsync(x => x.CreatedAt >= today && x.CreatedAt < tomorrow, cancellationToken);
 
                 var scheduledAppointments = await dbContext.AppointmentRequests
                     .AsNoTracking()
-                    .CountAsync(x => x.Status == AppointmentStatus.Scheduled, cancellationToken);
+                    .Where(x => patientIds.Contains(x.PatientInfoId) && x.Status == AppointmentStatus.Scheduled)
+                    .CountAsync(cancellationToken);
 
                 var pendingAppointments = await dbContext.AppointmentRequests
                     .AsNoTracking()
-                    .CountAsync(x => x.Status == AppointmentStatus.Pending, cancellationToken);
+                    .Where(x => patientIds.Contains(x.PatientInfoId) && x.Status == AppointmentStatus.Pending)
+                    .CountAsync(cancellationToken);
 
                 var incomeToday = await dbContext.PatientProgressNotes
                     .AsNoTracking()
-                    .Where(x => x.Date.HasValue && x.Date.Value == today)
+                    .Where(x => x.Date.HasValue && x.Date.Value == today && patientIds.Contains(x.PatientInfoId))
                     .SumAsync(x => (double?)x.AmountPaid, cancellationToken) ?? 0;
 
                 var totalIncomeMonthly = await dbContext.PatientProgressNotes
                     .AsNoTracking()
-                    .Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value < nextMonthStart)
+                    .Where(x => patientIds.Contains(x.PatientInfoId) && x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value < nextMonthStart)
                     .SumAsync(x => (double?)x.AmountPaid, cancellationToken) ?? 0;
 
                 var totalExpenseMonthly = await dbContext.ClinicExpenses
                     .AsNoTracking()
+                    .Where(x => x.ClinicProfileId == clinicId)
                     .Where(x => x.Date >= monthStart && x.Date < nextMonthStart)
                     .SumAsync(x => (double?)x.Amount, cancellationToken) ?? 0;
 
                 var latestPatientItems = await dbContext.PatientInfos
                     .AsNoTracking()
+                    .Where(x => x.ClinicProfileId == clinicId)
                     .OrderByDescending(x => x.CreatedAt)
-                    .Take(5)
+                    .Take(10)
                     .Select(x => new
                     {
                         x.Id,
@@ -103,7 +115,7 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
 
                 var monthlyIncomeRaw = await dbContext.PatientProgressNotes
                     .AsNoTracking()
-                    .Where(x => x.Date.HasValue && x.Date.Value >= yearStart && x.Date.Value < nextYearStart)
+                    .Where(x => patientIds.Contains(x.PatientInfoId) && x.Date.HasValue && x.Date.Value >= yearStart && x.Date.Value < nextYearStart)
                     .GroupBy(x => x.Date!.Value.Month)
                     .Select(group => new
                     {
@@ -114,7 +126,7 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
 
                 var monthlyExpenseRaw = await dbContext.ClinicExpenses
                     .AsNoTracking()
-                    .Where(x => x.Date >= yearStart && x.Date < nextYearStart)
+                    .Where(x => x.Date >= yearStart && x.Date < nextYearStart && x.ClinicProfileId == clinicId)
                     .GroupBy(x => x.Date.Month)
                     .Select(group => new
                     {
@@ -130,7 +142,7 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
 
                 var monthlyRevenue = await dbContext.PatientProgressNotes
                     .AsNoTracking()
-                    .Where(x => x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value < nextMonthStart)
+                    .Where(x => patientIds.Contains(x.PatientInfoId) &&x.Date.HasValue && x.Date.Value >= monthStart && x.Date.Value < nextMonthStart)
                     .GroupBy(x => x.Category)
                     .Select(group => new MonthlyRevenueModel
                     {
@@ -138,12 +150,11 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
                         TotalAmount = group.Sum(x => x.AmountPaid)
                     })
                     .OrderByDescending(x => x.TotalAmount)
-                    .Take(5)
                     .ToListAsync(cancellationToken);
 
                 var response = new DashboardResponseModel
                 {
-                    TotalPatients = totalPatients,
+                    TotalPatients = patientInfos.Count(),
                     PatientsToday = patientsToday,
                     ScheduledAppointments = scheduledAppointments,
                     PendingAppointments = pendingAppointments,
@@ -176,29 +187,28 @@ namespace DMD.APPLICATION.Dashboard.Queries.GetByParams
             DateTime end,
             CancellationToken cancellationToken)
         {
-            var items = await dbContext.AppointmentRequests
+            var items = await dbContext.PatientInfos
                 .AsNoTracking()
-                .Where(x => x.AppointmentDateFrom >= start && x.AppointmentDateFrom < end)
+                .SelectMany(p => p.AppointmentRequests
+                    .Where(a => a.AppointmentDateFrom >= start && a.AppointmentDateFrom < end)
+                    .Select(a => new
+                    {
+                        a.AppointmentDateFrom,
+                        FullName = p.FirstName + " " + p.LastName,
+                        a.ReasonForVisit,
+                        a.Status
+                    }))
                 .OrderBy(x => x.AppointmentDateFrom)
                 .Take(5)
-                .Select(x => new
-                {
-                    x.AppointmentDateFrom,
-                    x.PatientInfoId,
-                    x.ReasonForVisit,
-                    x.Status
-                })
                 .ToListAsync(cancellationToken);
 
-            return items
-                .Select(x => new DashboardAppointmentModel
-                {
-                    Time = x.AppointmentDateFrom.ToString("hh:mm tt"),
-                    //FullName = x.PatientName,
-                    Reason = x.ReasonForVisit,
-                    Highlight = x.Status == AppointmentStatus.Scheduled
-                })
-                .ToList();
+            return items.Select(x => new DashboardAppointmentModel
+            {
+                Time = x.AppointmentDateFrom.ToString("hh:mm tt"),
+                FullName = x.FullName,
+                Reason = x.ReasonForVisit,
+                Highlight = x.Status == AppointmentStatus.Scheduled
+            }).ToList();
         }
 
         private static List<MonthlyIncomeModel> BuildMonthlyIncomeSeries(
