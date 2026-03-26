@@ -46,7 +46,7 @@ namespace DMD.API.Configurations
         {
             return environment.IsDevelopment()
                 || environment.IsEnvironment("Local")
-                || environment.IsEnvironment("Test");
+                || environment.IsEnvironment("Production");
         }
     }
 }
