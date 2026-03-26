@@ -181,6 +181,11 @@ ConfigureAuthentication(app);
 // ==========================
 // 13. ROUTES / ENDPOINTS
 // ==========================
+
+app.MapGet("/", () => Results.Ok(new
+{
+    message = "OralSync API is running"
+}));
 // Enhanced health + startup log endpoint
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow, Environment = app.Environment.EnvironmentName }));
 
